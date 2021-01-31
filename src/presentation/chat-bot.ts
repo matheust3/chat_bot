@@ -1,4 +1,4 @@
-import { Whatsapp } from 'venom-bot'
+import { Message, Whatsapp } from 'venom-bot'
 import { WhatsMessage } from '../domain/models/whats-message'
 import { StickerRepository } from '../domain/repositories/sticker-repository'
 
@@ -11,7 +11,7 @@ export class ChatBot {
     this._stickerRepository = stickerRepository
   }
 
-  async onAnyMessage (message: WhatsMessage): Promise<void> {
+  async onAnyMessage (message: any): Promise<void> {
     console.log(message)
     if (message.caption !== undefined && message.caption !== null) {
       message.caption = message.caption.toLowerCase()
