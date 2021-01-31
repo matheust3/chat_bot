@@ -14,8 +14,9 @@ export class CreateAnimatedStickerDatasourceImpl implements CreateAnimatedSticke
     fs.writeFileSync(`${__dirname}/../cache/${uuid}`, data)
 
     const exec = promisify(child_process.exec)
-    const { stderr } = await exec(`ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" -loop 0 ${__dirname}/../cache/${uuid}.gif`)
+    const { stderr } = await exec(`ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" -loop 0 ${__dirname}/../cache/${uuid}.gif -hide_banner -loglevel error`)
     if (stderr !== '') {
+      console.error(stderr)
       return null
     } else {
       return `${__dirname}/../cache/${uuid}.gif`
