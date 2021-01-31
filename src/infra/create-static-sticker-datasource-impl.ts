@@ -16,6 +16,7 @@ export class CreateStaticStickerDatasourceImpl implements CreateStaticStickerDat
     const exec = promisify(child_process.exec)
     const { stderr } = await exec(`mogrify -format png ${__dirname}/../cache/${uuid}`)
     if (stderr !== '') {
+      console.error(stderr)
       return null
     } else {
       return `${__dirname}/../cache/${uuid}.png`

@@ -70,9 +70,11 @@ describe('CreateStaticStickerDatasourceImpl', () => {
     //! Arrange
     const { datasource } = makeSut()
     execFunc.mockResolvedValue({ stdout: '', stderr: 'err' })
+    jest.spyOn(global.console, 'error')
     //! Act
     const result = await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
+    expect(console.error).toHaveBeenCalledWith('err')
     expect(result).toEqual(null)
   })
 })

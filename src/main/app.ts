@@ -2,11 +2,13 @@ import { create } from 'venom-bot'
 import { StickerRepositoryImpl } from '../data/repositories/sticker-repository-impl'
 import { CheckDataTypeDatasourceImpl } from '../infra/check-data-type-datasource-impl'
 import { CreateStaticStickerDatasourceImpl } from '../infra/create-static-sticker-datasource-impl'
+import { CreateAnimatedStickerDatasourceImpl } from '../infra/create-animated-sticker-datasource-impl'
 import { ChatBot } from '../presentation/chat-bot'
 
 const createStaticStickerDatasource = new CreateStaticStickerDatasourceImpl()
+const createAnimatedStickerDatasource = new CreateAnimatedStickerDatasourceImpl()
 const checkDataTypeDatasource = new CheckDataTypeDatasourceImpl()
-const stickerRepository = new StickerRepositoryImpl(createStaticStickerDatasource, checkDataTypeDatasource)
+const stickerRepository = new StickerRepositoryImpl(createStaticStickerDatasource, checkDataTypeDatasource, createAnimatedStickerDatasource)
 
 create('chat-bot').then((client) => {
   const chatBot = new ChatBot(client, stickerRepository)
