@@ -82,7 +82,7 @@ describe('ChatBot -- #sticker', () => {
     //! Act
     await chatBot.onAnyMessage(message)
     //! Assert
-    expect(whatsApp.sendImageAsStickerGif).toHaveBeenCalledWith(message.from, 'path to image')
+    expect(whatsApp.sendImageAsStickerGif).toHaveBeenCalledWith(message.chatId, 'path to image')
   })
   test('ensure send static sticker if sticker is valid and is static', async () => {
     //! Arrange
@@ -92,7 +92,7 @@ describe('ChatBot -- #sticker', () => {
     //! Act
     await chatBot.onAnyMessage(message)
     //! Assert
-    expect(whatsApp.sendImageAsSticker).toHaveBeenCalledWith(message.from, 'path to image')
+    expect(whatsApp.sendImageAsSticker).toHaveBeenCalledWith(message.chatId, 'path to image')
   })
   test('ensure send a message if sticker is invalid', async () => {
     //! Arrange
@@ -102,6 +102,6 @@ describe('ChatBot -- #sticker', () => {
     //! Act
     await chatBot.onAnyMessage(message)
     //! Assert
-    expect(whatsApp.sendText).toHaveBeenCalledWith(message.from, '😣 Não foi possível criar sua figurinha 😭')
+    expect(whatsApp.sendText).toHaveBeenCalledWith(message.chatId, '😣 Não foi possível criar sua figurinha 😭')
   })
 })

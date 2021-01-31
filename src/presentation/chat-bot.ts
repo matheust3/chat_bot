@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { Whatsapp } from 'venom-bot'
+import { WhatsMessage } from '../domain/models/whats-message'
 import { StickerRepository } from '../domain/repositories/sticker-repository'
 
 export class ChatBot {
@@ -18,11 +19,12 @@ export class ChatBot {
     }
     if (message.caption !== undefined && message.caption === '#sticker') {
       const result = await this._stickerRepository.createSticker((await this._client.decryptFile(message)).toString('base64'))
+      const msg: WhatsMessage = message
       if (result?.valid) {
         if (result.type === 'animated') {
-          await this._client.sendImageAsStickerGif(message.from, result.path)
+          await this._client.sendImageAsStickerGif(msg.chatId, result.path)
         } else {
-          await this._client.sendImageAsSticker(message.from, result.path)
+          await this._client.sendImageAsSticker(msg.chatId, result.path)
         }
       } else {
         await this._client.sendText(message.from, '😣 Não foi possível criar sua figurinha 😭')
