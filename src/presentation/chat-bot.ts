@@ -1,5 +1,5 @@
-import { Message, Whatsapp } from 'venom-bot'
-import { WhatsMessage } from '../domain/models/whats-message'
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+import { Whatsapp } from 'venom-bot'
 import { StickerRepository } from '../domain/repositories/sticker-repository'
 
 export class ChatBot {
@@ -11,6 +11,7 @@ export class ChatBot {
     this._stickerRepository = stickerRepository
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async onAnyMessage (message: any): Promise<void> {
     console.log(message)
     if (message.caption !== undefined && message.caption !== null) {
