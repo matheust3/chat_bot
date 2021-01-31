@@ -1,0 +1,16 @@
+{
+  "extends": [
+    "standard",
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended",
+    "standard-with-typescript"
+  ],
+  "parserOptions": {
+    "project": "./tsconfig.eslint.json"
+  },
+  "rules": {
+    "space-before-function-paren": "off",
+    "@typescript-eslint/consistent-type-assertions": "off"
+  }
+}

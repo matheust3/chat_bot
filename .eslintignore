@@ -1,0 +1,10 @@
+node_modules
+dist
+src/main/worker.js
+jest.config.js
+coverage
+src/css/**
+src/js/**
+src/static/**
+src/xml/**
+scripts/**

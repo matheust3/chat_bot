@@ -1,0 +1,30 @@
+version: "3.5"
+networks:
+  dev_net:
+    name: dev_chat_bot_net
+    ipam:
+      driver: default
+      config:
+        - subnet: "170.30.238.0/24"
+services:
+  dev_chat_bot:
+    privileged: true
+    user: developer
+    container_name: dev_chat_bot
+    image: dev_chat_bot
+    build: 
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    restart: on-failure
+    volumes:
+      - type: bind
+        source: ..
+        target: /home/developer/workspace
+      - type: bind
+        source: ${DOCKER_SOCKET}
+        target: /var/run/docker.sock
+    networks:
+      dev_net:
+        ipv4_address: 170.30.238.2
+    #quando esse comando acabar o container fecha
+    command: /bin/sh -c "while sleep 1000; do :; done"
