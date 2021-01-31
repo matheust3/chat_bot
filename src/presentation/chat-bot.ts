@@ -18,16 +18,26 @@ export class ChatBot {
       message.caption = message.caption.toLowerCase()
     }
     if (message.caption !== undefined && message.caption === '#sticker') {
-      const result = await this._stickerRepository.createSticker((await this._client.decryptFile(message)).toString('base64'))
-      const msg: WhatsMessage = message
-      if (result?.valid) {
-        if (result.type === 'animated') {
-          await this._client.sendImageAsStickerGif(msg.chatId, result.path)
+      try {
+        const result = await this._stickerRepository.createSticker((await this._client.decryptFile(message)).toString('base64'))
+        const msg: WhatsMessage = message
+        if (result?.valid) {
+          if (result.type === 'animated') {
+            await this._client.sendImageAsStickerGif(msg.chatId, result.path)
+          } else {
+            await this._client.sendImageAsSticker(msg.chatId, result.path)
+          }
         } else {
-          await this._client.sendImageAsSticker(msg.chatId, result.path)
+          await this._client.sendText(msg.chatId, '😣 Não foi possível criar sua figurinha 😭')
         }
-      } else {
-        await this._client.sendText(message.from, '😣 Não foi possível criar sua figurinha 😭')
+      } catch (err) {
+        if ((err.message as string).includes('missing critical data needed to download the file')) {
+          await this._client.sendText(message.chatId, 'Nao consegui baixar a imagem pra fazer a figurinha 😪😪')
+          await this._client.sendText(message.chatId, 'Manda de novo! 🥺🥺')
+        } else {
+          await this._client.sendText(message.chatId, 'Nao consegui fazer sua figurinha 😓😓')
+          console.error(err)
+        }
       }
     }
   }

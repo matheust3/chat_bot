@@ -104,4 +104,32 @@ describe('ChatBot -- #sticker', () => {
     //! Assert
     expect(whatsApp.sendText).toHaveBeenCalledWith(message.chatId, '😣 Não foi possível criar sua figurinha 😭')
   })
+  test('ensure send a message decryptMessage throws', async () => {
+    //! Arrange
+    const { message, chatBot, whatsApp } = makeSut()
+    jest.spyOn(whatsApp, 'decryptFile').mockReturnValue(new Promise((resolve, reject) => reject(Error('message is missing critical data needed to download the file'))))
+    const wAppMock = jest.spyOn(whatsApp, 'sendText')
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(wAppMock.mock.calls).toEqual([
+      [message.chatId, 'Nao consegui baixar a imagem pra fazer a figurinha 😪😪'],
+      [message.chatId, 'Manda de novo! 🥺🥺']
+    ])
+  })
+  test('ensure send a message decryptMessage throws', async () => {
+    //! Arrange
+    const { message, chatBot, whatsApp } = makeSut()
+    const e = Error('any error test')
+    jest.spyOn(global.console, 'error')
+    jest.spyOn(whatsApp, 'decryptFile').mockReturnValue(new Promise((resolve, reject) => reject(e)))
+    const wAppMock = jest.spyOn(whatsApp, 'sendText')
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(console.error).toHaveBeenCalledWith(e)
+    expect(wAppMock.mock.calls).toEqual([
+      [message.chatId, 'Nao consegui fazer sua figurinha 😓😓']
+    ])
+  })
 })
