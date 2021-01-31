@@ -13,7 +13,6 @@ export class ChatBot {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async onAnyMessage (message: any): Promise<void> {
-    console.log(message)
     if (message.caption !== undefined && message.caption !== null) {
       message.caption = message.caption.toLowerCase()
     }
@@ -21,9 +20,9 @@ export class ChatBot {
       const result = await this._stickerRepository.createSticker((await this._client.decryptFile(message)).toString('base64'))
       if (result?.valid) {
         if (result.type === 'animated') {
-          await this._client.sendImageAsStickerGif(message.from, result.data)
+          await this._client.sendImageAsStickerGif(message.from, result.path)
         } else {
-          await this._client.sendImageAsSticker(message.from, result.data)
+          await this._client.sendImageAsSticker(message.from, result.path)
         }
       } else {
         await this._client.sendText(message.from, '😣 Não foi possível criar sua figurinha 😭')

@@ -6,13 +6,13 @@ import fs from 'fs'
 import { CheckDataTypeDatasource } from '../datasources/check-data-type-datasource'
 import { Sticker } from '../../domain/models/sticker'
 
-interface SutyTipes{
+interface SutTipes{
   stickerRepositoryImpl: StickerRepositoryImpl
   createStaticStickerDatasource: CreateStaticStickerDatasource
   checkDataTypeDatasource: CheckDataTypeDatasource
 }
 
-const makeSut = (): SutyTipes => {
+const makeSut = (): SutTipes => {
   const createStaticStickerDatasource = mock<CreateStaticStickerDatasource>()
   const checkDataTypeDatasource = mock< CheckDataTypeDatasource>()
 
@@ -55,12 +55,12 @@ describe('StickerRepositoryImpl --> static sticker', () => {
     const { createStaticStickerDatasource, stickerRepositoryImpl, checkDataTypeDatasource } = makeSut()
     const pngBuffer = fs.readFileSync(`${__dirname}/../../../fixtures/png.png`)
     const base64File = pngBuffer.toString('base64')
-    jest.spyOn(createStaticStickerDatasource, 'createSticker').mockReturnValue(new Promise(resolve => resolve(pngBuffer)))
+    jest.spyOn(createStaticStickerDatasource, 'createSticker').mockReturnValue(new Promise(resolve => resolve('path to image')))
     jest.spyOn(checkDataTypeDatasource, 'fromBuffer').mockReturnValue(new Promise(resolve => resolve('staticSticker')))
     //! Act
     const result = await stickerRepositoryImpl.createSticker(base64File)
     //! Assert
-    expect(result).toEqual({ data: base64File, type: 'static', valid: true } as Sticker)
+    expect(result).toEqual({ path: 'path to image', type: 'static', valid: true } as Sticker)
   })
   test('ensure return not valid sticker if sticker is not valid', async () => {
   //! Arrange
@@ -72,7 +72,7 @@ describe('StickerRepositoryImpl --> static sticker', () => {
     //! Act
     const result = await stickerRepositoryImpl.createSticker(base64File)
     //! Assert
-    expect(result).toEqual({ data: null, type: 'static', valid: false } as Sticker)
+    expect(result).toEqual({ path: null, type: 'static', valid: false } as Sticker)
   })
   test('ensure return invalid sticker if dataType is invalidSticker', async () => {
   //! Arrange
@@ -84,6 +84,6 @@ describe('StickerRepositoryImpl --> static sticker', () => {
     //! Act
     const result = await stickerRepositoryImpl.createSticker(base64File)
     //! Assert
-    expect(result).toEqual({ data: null, type: 'static', valid: false } as Sticker)
+    expect(result).toEqual({ path: null, type: 'static', valid: false } as Sticker)
   })
 })

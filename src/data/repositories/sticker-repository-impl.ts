@@ -18,11 +18,11 @@ export class StickerRepositoryImpl implements StickerRepository {
     if (dataType === 'staticSticker') {
       const result = await this._createStaticStickerDatasource.createSticker(dataBuffer)
       if (result !== undefined && result !== null) {
-        return { data: result.toString('base64'), type: 'static', valid: true }
+        return { path: result, type: 'static', valid: true }
       } else {
-        return { data: null, type: 'static', valid: false }
+        return { path: null, type: 'static', valid: false }
       }
     }
-    return { data: null, type: 'static', valid: false }
+    return { path: null, type: 'static', valid: false }
   }
 }

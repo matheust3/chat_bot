@@ -78,27 +78,27 @@ describe('ChatBot -- #sticker', () => {
     //! Arrange
     const { message, chatBot, whatsApp, stickerRepository } = makeSut()
     jest.spyOn(whatsApp, 'sendImageAsStickerGif')
-    jest.spyOn(stickerRepository, 'createSticker').mockReturnValue(new Promise(resolve => resolve({ data: 'any base64 data', type: 'animated', valid: true })))
+    jest.spyOn(stickerRepository, 'createSticker').mockReturnValue(new Promise(resolve => resolve({ path: 'path to image', type: 'animated', valid: true })))
     //! Act
     await chatBot.onAnyMessage(message)
     //! Assert
-    expect(whatsApp.sendImageAsStickerGif).toHaveBeenCalledWith(message.from, 'any base64 data')
+    expect(whatsApp.sendImageAsStickerGif).toHaveBeenCalledWith(message.from, 'path to image')
   })
   test('ensure send static sticker if sticker is valid and is static', async () => {
     //! Arrange
     const { message, chatBot, whatsApp, stickerRepository } = makeSut()
     jest.spyOn(whatsApp, 'sendImageAsSticker')
-    jest.spyOn(stickerRepository, 'createSticker').mockReturnValue(new Promise(resolve => resolve({ data: 'any base64 data', type: 'static', valid: true })))
+    jest.spyOn(stickerRepository, 'createSticker').mockReturnValue(new Promise(resolve => resolve({ path: 'path to image', type: 'static', valid: true })))
     //! Act
     await chatBot.onAnyMessage(message)
     //! Assert
-    expect(whatsApp.sendImageAsSticker).toHaveBeenCalledWith(message.from, 'any base64 data')
+    expect(whatsApp.sendImageAsSticker).toHaveBeenCalledWith(message.from, 'path to image')
   })
   test('ensure send a message if sticker is invalid', async () => {
     //! Arrange
     const { message, chatBot, whatsApp, stickerRepository } = makeSut()
     jest.spyOn(whatsApp, 'sendImageAsSticker')
-    jest.spyOn(stickerRepository, 'createSticker').mockReturnValue(new Promise(resolve => resolve({ data: 'any base64 data', type: 'static', valid: false })))
+    jest.spyOn(stickerRepository, 'createSticker').mockReturnValue(new Promise(resolve => resolve({ path: 'path to image', type: 'static', valid: false })))
     //! Act
     await chatBot.onAnyMessage(message)
     //! Assert

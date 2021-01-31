@@ -58,14 +58,12 @@ describe('CreateStaticStickerDatasourceImpl', () => {
     //! Assert
     expect(execFunc).toHaveBeenCalledWith(`mogrify -format png ${__dirname}/../cache/uId`)
   })
-  test('ensure return new file buffer', async () => {
+  test('ensure return path to new file', async () => {
     //! Arrange
     const { datasource } = makeSut()
-    jest.spyOn(fs, 'readFileSync').mockReturnValue(Buffer.from('new buffer'))
     //! Act
     const result = await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
-    expect(fs.readFileSync).toHaveBeenCalledWith(`${__dirname}/../cache/uId.png`)
-    expect(result).toEqual(Buffer.from('new buffer'))
+    expect(result).toEqual(`${__dirname}/../cache/uId.png`)
   })
 })

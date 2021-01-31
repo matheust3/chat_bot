@@ -5,7 +5,7 @@ import { promisify } from 'util'
 import child_process from 'child_process'
 
 export class CreateStaticStickerDatasourceImpl implements CreateStaticStickerDatasource {
-  async createSticker (data: Buffer): Promise<Buffer> {
+  async createSticker (data: Buffer): Promise<string> {
     if (!fs.existsSync(`${__dirname}/../cache`)) {
       fs.mkdirSync(`${__dirname}/../cache`)
     }
@@ -16,6 +16,6 @@ export class CreateStaticStickerDatasourceImpl implements CreateStaticStickerDat
     const { stdout, stderr } = await exec(`mogrify -format png ${__dirname}/../cache/${uuid}`)
     console.log('out: ', stdout)
     console.log('err: ', stderr)
-    return fs.readFileSync(`${__dirname}/../cache/${uuid}.png`)
+    return `${__dirname}/../cache/${uuid}.png`
   }
 }
