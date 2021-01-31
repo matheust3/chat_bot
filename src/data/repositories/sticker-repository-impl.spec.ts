@@ -1,6 +1,7 @@
 
 import { StickerRepositoryImpl } from './sticker-repository-impl'
 import { CreateStaticStickerDatasource } from '../datasources/create-static-sticker-datasource'
+import { CreateAnimatedStickerDatasource } from '../datasources/create-animated-sticker-datasource'
 import { mock } from 'jest-mock-extended'
 import fs from 'fs'
 import { CheckDataTypeDatasource } from '../datasources/check-data-type-datasource'
@@ -9,16 +10,18 @@ import { Sticker } from '../../domain/models/sticker'
 interface SutTipes{
   stickerRepositoryImpl: StickerRepositoryImpl
   createStaticStickerDatasource: CreateStaticStickerDatasource
+  createAnimatedStickerDatasource: CreateAnimatedStickerDatasource
   checkDataTypeDatasource: CheckDataTypeDatasource
 }
 
 const makeSut = (): SutTipes => {
   const createStaticStickerDatasource = mock<CreateStaticStickerDatasource>()
-  const checkDataTypeDatasource = mock< CheckDataTypeDatasource>()
+  const checkDataTypeDatasource = mock<CheckDataTypeDatasource>()
+  const createAnimatedStickerDatasource = mock<CreateAnimatedStickerDatasource>()
 
-  const stickerRepositoryImpl = new StickerRepositoryImpl(createStaticStickerDatasource, checkDataTypeDatasource)
+  const stickerRepositoryImpl = new StickerRepositoryImpl(createStaticStickerDatasource, checkDataTypeDatasource, createAnimatedStickerDatasource)
 
-  return { stickerRepositoryImpl, createStaticStickerDatasource, checkDataTypeDatasource }
+  return { stickerRepositoryImpl, createStaticStickerDatasource, checkDataTypeDatasource, createAnimatedStickerDatasource }
 }
 
 describe('StickerRepositoryImpl --> static sticker', () => {
@@ -85,5 +88,37 @@ describe('StickerRepositoryImpl --> static sticker', () => {
     const result = await stickerRepositoryImpl.createSticker(base64File)
     //! Assert
     expect(result).toEqual({ path: null, type: 'static', valid: false } as Sticker)
+  })
+})
+
+describe('StickerRepositoryImpl --> animated sticker', () => {
+  test('ensure call CreateAnimatedSticker with correct params', async () => {
+    //! Arrange
+    const { stickerRepositoryImpl, createAnimatedStickerDatasource, checkDataTypeDatasource } = makeSut()
+    jest.spyOn(checkDataTypeDatasource, 'fromBuffer').mockReturnValue(new Promise(resolve => resolve('stickerAnimated')))
+    //! Act
+    await stickerRepositoryImpl.createSticker(Buffer.from('any buffer').toString('base64'))
+    //! Assert
+    expect(createAnimatedStickerDatasource.createSticker).toHaveBeenCalledWith(Buffer.from('any buffer'))
+  })
+  test('ensure return path to sticker if sticker is valid', async () => {
+    //! Arrange
+    const { stickerRepositoryImpl, createAnimatedStickerDatasource, checkDataTypeDatasource } = makeSut()
+    jest.spyOn(checkDataTypeDatasource, 'fromBuffer').mockReturnValue(new Promise(resolve => resolve('stickerAnimated')))
+    jest.spyOn(createAnimatedStickerDatasource, 'createSticker').mockReturnValue(new Promise(resolve => resolve('path to sticker')))
+    //! Act
+    const result = await stickerRepositoryImpl.createSticker(Buffer.from('any buffer').toString('base64'))
+    //! Assert
+    expect(result).toEqual({ path: 'path to sticker', type: 'animated', valid: true } as Sticker)
+  })
+  test('ensure return invalid sticker if datasource return null', async () => {
+    //! Arrange
+    const { stickerRepositoryImpl, createAnimatedStickerDatasource, checkDataTypeDatasource } = makeSut()
+    jest.spyOn(checkDataTypeDatasource, 'fromBuffer').mockReturnValue(new Promise(resolve => resolve('stickerAnimated')))
+    jest.spyOn(createAnimatedStickerDatasource, 'createSticker').mockReturnValue(new Promise(resolve => resolve(null)))
+    //! Act
+    const result = await stickerRepositoryImpl.createSticker(Buffer.from('any buffer').toString('base64'))
+    //! Assert
+    expect(result).toEqual({ path: null, type: 'animated', valid: false } as Sticker)
   })
 })

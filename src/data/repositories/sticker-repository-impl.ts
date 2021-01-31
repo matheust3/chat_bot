@@ -1,15 +1,19 @@
 import { Sticker } from '../../domain/models/sticker'
 import { StickerRepository } from '../../domain/repositories/sticker-repository'
 import { CheckDataTypeDatasource } from '../datasources/check-data-type-datasource'
+import { CreateAnimatedStickerDatasource } from '../datasources/create-animated-sticker-datasource'
 import { CreateStaticStickerDatasource } from '../datasources/create-static-sticker-datasource'
 
 export class StickerRepositoryImpl implements StickerRepository {
   private readonly _createStaticStickerDatasource: CreateStaticStickerDatasource
+  private readonly _createAnimatedStickerDatasource: CreateAnimatedStickerDatasource
   private readonly _checkDataTypeDatasource: CheckDataTypeDatasource
 
-  constructor (createStaticStickerDatasource: CreateStaticStickerDatasource, checkDataTypeDatasource: CheckDataTypeDatasource) {
+  constructor (createStaticStickerDatasource: CreateStaticStickerDatasource, checkDataTypeDatasource: CheckDataTypeDatasource
+    , createAnimatedStickerDatasource: CreateAnimatedStickerDatasource) {
     this._createStaticStickerDatasource = createStaticStickerDatasource
     this._checkDataTypeDatasource = checkDataTypeDatasource
+    this._createAnimatedStickerDatasource = createAnimatedStickerDatasource
   }
 
   async createSticker (data: string): Promise<Sticker> {
@@ -22,7 +26,15 @@ export class StickerRepositoryImpl implements StickerRepository {
       } else {
         return { path: null, type: 'static', valid: false }
       }
+    } else if (dataType === 'stickerAnimated') {
+      const result = await this._createAnimatedStickerDatasource.createSticker(dataBuffer)
+      if (result !== null) {
+        return { path: result, type: 'animated', valid: true }
+      } else {
+        return { path: null, type: 'animated', valid: false }
+      }
+    } else {
+      return { path: null, type: 'static', valid: false }
     }
-    return { path: null, type: 'static', valid: false }
   }
 }
