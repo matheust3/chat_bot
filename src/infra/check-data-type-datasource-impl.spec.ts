@@ -24,6 +24,24 @@ describe('CheckDataTypeDatasourceImpl', () => {
     //! Assert
     expect(result).toBe('staticSticker' as DataType)
   })
+  test('ensure return staticSticker if data is jpeg', async () => {
+    //! Arrange
+    const { datasource } = makeSut()
+    const buffer = fs.readFileSync(`${__dirname}/../../fixtures/jpeg.jpeg`)
+    //! Act
+    const result = await datasource.fromBuffer(buffer)
+    //! Assert
+    expect(result).toBe('staticSticker' as DataType)
+  })
+  test('ensure return staticSticker if data is jpg', async () => {
+    //! Arrange
+    const { datasource } = makeSut()
+    const buffer = fs.readFileSync(`${__dirname}/../../fixtures/jpg.jpg`)
+    //! Act
+    const result = await datasource.fromBuffer(buffer)
+    //! Assert
+    expect(result).toBe('staticSticker' as DataType)
+  })
   test('ensure return animatedSticker if data is mp4', async () => {
     //! Arrange
     const { datasource } = makeSut()
@@ -37,9 +55,22 @@ describe('CheckDataTypeDatasourceImpl', () => {
     //! Arrange
     const { datasource } = makeSut()
     const buffer = fs.readFileSync(`${__dirname}/../../fixtures/text.txt`)
+    jest.spyOn(global.console, 'error')
     //! Act
     const result = await datasource.fromBuffer(buffer)
     //! Assert
     expect(result).toBe('invalidSticker' as DataType)
+    expect(console.error).toHaveBeenCalledWith('Tipo de arquivo nao mapeado -> arquivo nao reconhecido')
+  })
+  test('ensure return invalid if data is not a static image and not a animated/video', async () => {
+    //! Arrange
+    const { datasource } = makeSut()
+    const buffer = fs.readFileSync(`${__dirname}/../../fixtures/pdf.pdf`)
+    jest.spyOn(global.console, 'error')
+    //! Act
+    const result = await datasource.fromBuffer(buffer)
+    //! Assert
+    expect(result).toBe('invalidSticker' as DataType)
+    expect(console.error).toHaveBeenCalledWith('Tipo de arquivo nao mapeado -> ', 'pdf')
   })
 })

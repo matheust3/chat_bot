@@ -3,7 +3,7 @@ import { DataType } from '../domain/models/data-types'
 import fileType from 'file-type'
 
 export class CheckDataTypeDatasourceImpl implements CheckDataTypeDatasource {
-  private readonly _staticStickerTypes = ['png']
+  private readonly _staticStickerTypes = ['png', 'jpg', 'jpeg']
   private readonly _animatedStickerTypes = ['mp4']
 
   async fromBuffer (buffer: Buffer): Promise<DataType> {
@@ -14,9 +14,11 @@ export class CheckDataTypeDatasourceImpl implements CheckDataTypeDatasource {
       } else if (this._animatedStickerTypes.includes(type.ext)) {
         return 'stickerAnimated'
       } else {
+        console.error('Tipo de arquivo nao mapeado -> ', type.ext)
         return 'invalidSticker'
       }
     } else {
+      console.error('Tipo de arquivo nao mapeado -> arquivo nao reconhecido')
       return 'invalidSticker'
     }
   }
