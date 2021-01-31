@@ -6,6 +6,7 @@ import child_process from 'child_process'
 
 export class CreateStaticStickerDatasourceImpl implements CreateStaticStickerDatasource {
   async createSticker (data: Buffer): Promise<string> {
+    /* istanbul ignore else */
     if (!fs.existsSync(`${__dirname}/../cache`)) {
       fs.mkdirSync(`${__dirname}/../cache`)
     }
@@ -13,9 +14,11 @@ export class CreateStaticStickerDatasourceImpl implements CreateStaticStickerDat
     fs.writeFileSync(`${__dirname}/../cache/${uuid}`, data)
 
     const exec = promisify(child_process.exec)
-    const { stdout, stderr } = await exec(`mogrify -format png ${__dirname}/../cache/${uuid}`)
-    console.log('out: ', stdout)
-    console.log('err: ', stderr)
-    return `${__dirname}/../cache/${uuid}.png`
+    const { stderr } = await exec(`mogrify -format png ${__dirname}/../cache/${uuid}`)
+    if (stderr !== '') {
+      return null
+    } else {
+      return `${__dirname}/../cache/${uuid}.png`
+    }
   }
 }

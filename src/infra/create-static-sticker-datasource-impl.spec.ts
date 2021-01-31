@@ -15,7 +15,7 @@ const makeSut = (): SutTypes => {
 }
 
 jest.mock('fs')
-const execFunc = jest.fn().mockResolvedValue({ stdout: 'ok' })
+const execFunc = jest.fn().mockResolvedValue({ stdout: 'ok', stderr: '' })
 jest.mock('util', () => ({
   promisify: jest.fn(() => {
     return execFunc
@@ -65,5 +65,14 @@ describe('CreateStaticStickerDatasourceImpl', () => {
     const result = await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
     expect(result).toEqual(`${__dirname}/../cache/uId.png`)
+  })
+  test('ensure return null if stderr', async () => {
+    //! Arrange
+    const { datasource } = makeSut()
+    execFunc.mockResolvedValue({ stdout: '', stderr: 'err' })
+    //! Act
+    const result = await datasource.createSticker(Buffer.from('any buffer'))
+    //! Assert
+    expect(result).toEqual(null)
   })
 })
