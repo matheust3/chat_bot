@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "npm run build && npm run start",
     "start": "node dist/main/app.js",
     "debug": "node --inspect=0.0.0.0:9222 --nolazy dist/main/app.js",
     "build": "rimraf dist && tsc && node scripts/copyfiles.js",
