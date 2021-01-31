@@ -9,6 +9,7 @@ interface SutTypes{
   whatsApp: Whatsapp
   chatBot: ChatBot
   message: WhatsMessage
+  fileBuffer: Buffer
   stickerRepository: StickerRepository
 }
 
@@ -16,23 +17,24 @@ const makeSut = (): SutTypes => {
   const stickerRepository = mock<StickerRepository>()
   const whatsApp = mock<Whatsapp>()
   const message: WhatsMessage = JSON.parse(fs.readFileSync(`${__dirname}/../../fixtures/message-sticker-model.json`, 'utf8'))
-
+  const fileBuffer = Buffer.from('file')
   jest.spyOn(stickerRepository, 'createSticker')
+  jest.spyOn(whatsApp, 'decryptFile').mockReturnValue(new Promise(resolve => resolve(fileBuffer)))
 
   const chatBot = new ChatBot(whatsApp, stickerRepository)
 
-  return { whatsApp, message, stickerRepository, chatBot }
+  return { whatsApp, message, stickerRepository, chatBot, fileBuffer }
 }
 
 describe('ChatBot', () => {
   test('ensure remove case sensitive from captions', async () => {
     //! Arrange
-    const { message, stickerRepository, chatBot } = makeSut()
+    const { message, stickerRepository, chatBot, fileBuffer } = makeSut()
     message.caption = '#sTicKer'
     //! Act
     await chatBot.onAnyMessage(message)
     //! Assert
-    expect(stickerRepository.createSticker).toHaveBeenCalledWith(message.body)
+    expect(stickerRepository.createSticker).toHaveBeenCalledWith(fileBuffer.toString('base64'))
   })
   test('ensure load a json message model', () => {
     //! Arrange
@@ -46,12 +48,12 @@ describe('ChatBot', () => {
 describe('ChatBot -- #sticker', () => {
   test('ensure call sticker repository to create a sticker if caption is #sticker', async () => {
     //! Arrange
-    const { message, stickerRepository, chatBot } = makeSut()
+    const { message, stickerRepository, chatBot, fileBuffer } = makeSut()
     message.caption = '#sticker'
     //! Act
     await chatBot.onAnyMessage(message)
     //! Assert
-    expect(stickerRepository.createSticker).toHaveBeenCalledWith(message.body)
+    expect(stickerRepository.createSticker).toHaveBeenCalledWith(fileBuffer.toString('base64'))
   })
   test('ensure not call sticker repository to create a sticker if caption not is #sticker', async () => {
     //! Arrange

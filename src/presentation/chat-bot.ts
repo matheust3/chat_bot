@@ -18,7 +18,7 @@ export class ChatBot {
       message.caption = message.caption.toLowerCase()
     }
     if (message.caption !== undefined && message.caption === '#sticker') {
-      const result = await this._stickerRepository.createSticker(message.body)
+      const result = await this._stickerRepository.createSticker((await this._client.decryptFile(message)).toString('base64'))
       if (result?.valid) {
         if (result.type === 'animated') {
           await this._client.sendImageAsStickerGif(message.from, result.data)
