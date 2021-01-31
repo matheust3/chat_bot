@@ -3,6 +3,7 @@
     "Mapnik",
     "Postgres",
     "bbox",
+    "mogrify",
     "ndvi",
     "webp",
     "whatsapp"
