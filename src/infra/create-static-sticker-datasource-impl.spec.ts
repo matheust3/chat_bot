@@ -48,7 +48,7 @@ describe('CreateStaticStickerDatasourceImpl', () => {
     //! Act
     await datasource.createSticker(buffer)
     //! Assert
-    expect(fs.writeFileSync).toHaveBeenCalledWith('uId', buffer)
+    expect(fs.writeFileSync).toHaveBeenCalledWith(`${__dirname}/../cache/uId`, buffer)
   })
   test('ensure convert file to png', async () => {
     //! Arrange

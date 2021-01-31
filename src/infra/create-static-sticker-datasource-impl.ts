@@ -10,7 +10,7 @@ export class CreateStaticStickerDatasourceImpl implements CreateStaticStickerDat
       fs.mkdirSync(`${__dirname}/../cache`)
     }
     const uuid = v4()
-    fs.writeFileSync(uuid, data)
+    fs.writeFileSync(`${__dirname}/../cache/${uuid}`, data)
 
     const exec = promisify(child_process.exec)
     const { stdout, stderr } = await exec(`mogrify -format png ${__dirname}/../cache/${uuid}`)
