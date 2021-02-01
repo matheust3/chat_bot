@@ -10,7 +10,7 @@ const createAnimatedStickerDatasource = new CreateAnimatedStickerDatasourceImpl(
 const checkDataTypeDatasource = new CheckDataTypeDatasourceImpl()
 const stickerRepository = new StickerRepositoryImpl(createStaticStickerDatasource, checkDataTypeDatasource, createAnimatedStickerDatasource)
 
-create('chat-bot').then((client) => {
+create('chat-bot', null, null, { browserArgs: ['--no-sandbox'] }).then((client) => {
   const chatBot = new ChatBot(client, stickerRepository)
   client.onAnyMessage((message) => {
     chatBot.onAnyMessage(message).catch((error) => {

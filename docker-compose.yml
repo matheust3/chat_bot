@@ -1,55 +1,25 @@
 version: "3.5"
-
 networks:
   app_net:
-    name: minha_carteira_net
+    name: chat_bot_net
     ipam:
       driver: default
       config:
-        - subnet: "175.21.238.0/24"
+        - subnet: "165.21.238.0/24"
 services:
-  db:
-    container_name: minha_carteira_maria
-    image: mariadb:10
-    restart: on-failure
-    volumes:
-      - ${MYSQL_ROOT_DIR}/db:/var/lib/mysql
-      - ${MYSQL_ROOT_DIR}/conf.d:/etc/mysql/conf.d
-    environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_ROOT_HOST=175.21.238.1
-    ports:
-      - "127.0.0.1:3306:3306"
-    networks:
-      app_net:
-        ipv4_address: 175.21.238.2
-    logging:
-      options:
-        max-size: "10m"
-        max-file: "3"
-
   api:
-    container_name: minha_carteira
-    image: minha_carteira
+    container_name: chat_bot
+    image: chat_bot
     build: .
     restart: always
-    depends_on:
-      - db
-    environment:
-      - MARIA_PASS=${MARIA_PASS}
-      - MARIA_USER=${MARIA_USER}
-      - MARIA_HOST=${MARIA_HOST}
     volumes:
-      - ${DEV_ROOT_DIR}/dist:/usr/src/minha_carteira/dist
-      - ${DEV_ROOT_DIR}/package.json:/usr/src/minha_carteira/package.json
+      - ${DEV_ROOT_DIR}/dist:/home/matheus/dist
+      - ${DEV_ROOT_DIR}/tokens:/home/matheus/tokens
+      - ${DEV_ROOT_DIR}/package.json:/home/matheus/package.json
     command: bash -c "npm install --only=prod && ls -l .. && npm run start"
-    # command: npm start
-    ports:
-      - "9002:9002"
-      - "127.0.0.1:9222:9222"
     networks:
       app_net:
-        ipv4_address: 175.21.238.3
+        ipv4_address: 165.21.238.3
     logging:
       options:
         max-size: "10m"
