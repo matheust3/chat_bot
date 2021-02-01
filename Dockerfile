@@ -6,6 +6,8 @@ RUN echo 'deb-src http://mirror.unesp.br/debian/ buster main contrib non-free\n'
 RUN echo 'deb http://mirror.unesp.br/debian/ buster-updates main contrib non-free\n' >> /etc/apt/sources.list
 RUN echo 'deb-src http://mirror.unesp.br/debian/ buster-updates main contrib non-free\n' >> /etc/apt/sources.list
 RUN echo 'deb http://deb.debian.org/debian buster-backports main' > /etc/apt/sources.list.d/backports.list
+RUN apt update && apt install -y netselect-apt
+RUN netselect-apt -o -t -n -o /etc/apt/sources.list
 # Prerequisites
 RUN apt update && apt upgrade -y && apt install -y curl git wget tree chromium imagemagick ffmpeg xz-utils
 # Add user so we don't need --no-sandbox.
