@@ -56,7 +56,7 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
     //! Act
     await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
-    expect(execFunc).toHaveBeenCalledWith(`ffmpeg  -i ${__dirname}/../cache/uId -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" -loop 0 ${__dirname}/../cache/uId.gif -hide_banner -loglevel error`)
+    expect(execFunc).toHaveBeenCalledWith(`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=(iw+(ih-iw)):h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/uId.gif -hide_banner -loglevel error`)
   })
   test('ensure return path to new file', async () => {
     //! Arrange
