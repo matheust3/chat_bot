@@ -3,6 +3,7 @@
     "Mapnik",
     "Postgres",
     "bbox",
+    "ffprobe",
     "mogrify",
     "ndvi",
     "webp",

@@ -50,27 +50,60 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
     //! Assert
     expect(fs.writeFileSync).toHaveBeenCalledWith(`${__dirname}/../cache/uId`, buffer)
   })
-  test('ensure convert file to a gif', async () => {
+  test('ensure convert file to a gif if width>height', async () => {
     //! Arrange
     const { datasource } = makeSut()
+    execFunc.mockClear().mockResolvedValueOnce({ stdout: '320x240', stderr: '' })
+      .mockResolvedValue({ stdout: '', stderr: '' })
     //! Act
     await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
-    expect(execFunc).toHaveBeenCalledWith(`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=(iw+(ih-iw)):h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/uId.gif -hide_banner -loglevel error`)
+    expect(execFunc.mock.calls).toEqual([
+      [`ffprobe -v error -show_entries stream=width,height -of csv=p=0:s=x ${__dirname}/../cache/uId`],
+      [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=(iw+(ih-iw)):h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/uId.gif -hide_banner -loglevel error`]
+    ])
+  })
+  test('ensure convert file to a gif if width<height', async () => {
+    //! Arrange
+    const { datasource } = makeSut()
+    execFunc.mockClear().mockResolvedValueOnce({ stdout: '240x320', stderr: '' })
+      .mockResolvedValue({ stdout: '', stderr: '' })
+    //! Act
+    await datasource.createSticker(Buffer.from('any buffer'))
+    //! Assert
+    expect(execFunc.mock.calls).toEqual([
+      [`ffprobe -v error -show_entries stream=width,height -of csv=p=0:s=x ${__dirname}/../cache/uId`],
+      [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=iw:h=(ih+(iw-ih)):x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/uId.gif -hide_banner -loglevel error`]
+    ])
   })
   test('ensure return path to new file', async () => {
     //! Arrange
     const { datasource } = makeSut()
+    execFunc.mockClear().mockResolvedValueOnce({ stdout: '320x240', stderr: '' })
+      .mockResolvedValue({ stdout: '', stderr: '' })
     //! Act
     const result = await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
     expect(result).toEqual(`${__dirname}/../cache/uId.gif`)
   })
-  test('ensure return null if stderr', async () => {
+  test('ensure return null if stderr to get resolution', async () => {
     //! Arrange
     const { datasource } = makeSut()
     jest.spyOn(global.console, 'error')
-    execFunc.mockResolvedValue({ stdout: '', stderr: 'err' })
+    execFunc.mockClear().mockResolvedValueOnce({ stdout: '', stderr: 'err' })
+      .mockResolvedValue({ stdout: '', stderr: '' })
+    //! Act
+    const result = await datasource.createSticker(Buffer.from('any buffer'))
+    //! Assert
+    expect(console.error).toHaveBeenCalledWith('err')
+    expect(result).toEqual(null)
+  })
+  test('ensure return null if stderr in convert file', async () => {
+    //! Arrange
+    const { datasource } = makeSut()
+    jest.spyOn(global.console, 'error')
+    execFunc.mockClear().mockResolvedValueOnce({ stdout: '320x240', stderr: '' })
+      .mockResolvedValue({ stdout: '', stderr: 'err' })
     //! Act
     const result = await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert

@@ -14,12 +14,27 @@ export class CreateAnimatedStickerDatasourceImpl implements CreateAnimatedSticke
     fs.writeFileSync(`${__dirname}/../cache/${uuid}`, data)
 
     const exec = promisify(child_process.exec)
-    const { stderr } = await exec(`ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "crop=w=(iw+(ih-iw)):h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/${uuid}.gif -hide_banner -loglevel error`)
-    if (stderr !== '') {
+    const { stdout, stderr } = await exec(`ffprobe -v error -show_entries stream=width,height -of csv=p=0:s=x ${__dirname}/../cache/${uuid}`)
+    if (stderr === '') {
+      const height = parseFloat(stdout.split('x')[1])
+      const width = parseFloat(stdout.split('x')[0])
+      let err: string
+      if (width > height) {
+        const { stderr } = await exec(`ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "crop=w=(iw+(ih-iw)):h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/${uuid}.gif -hide_banner -loglevel error`)
+        err = stderr
+      } else {
+        const { stderr } = await exec(`ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "crop=w=iw:h=(ih+(iw-ih)):x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/${uuid}.gif -hide_banner -loglevel error`)
+        err = stderr
+      }
+      if (err !== '') {
+        console.error(err)
+        return null
+      } else {
+        return `${__dirname}/../cache/${uuid}.gif`
+      }
+    } else {
       console.error(stderr)
       return null
-    } else {
-      return `${__dirname}/../cache/${uuid}.gif`
     }
   }
 }
