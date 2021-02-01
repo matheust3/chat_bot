@@ -48,14 +48,37 @@ describe('ChatBot', () => {
 })
 
 describe('ChatBot -- #sticker', () => {
-  test('ensure call sticker repository to create a sticker if body is #sticker and quotedMsgObj != null', async () => {
+  test('ensure call sticker repository to create a sticker if body is #sticker and quotedMsgObj != null and quotedMsg type == "image"', async () => {
     //! Arrange
     const { responseMessage, stickerRepository, chatBot, fileBuffer } = makeSut()
     responseMessage.caption = undefined
+    responseMessage.quotedMsg.type = 'image'
     //! Act
     await chatBot.onAnyMessage(responseMessage)
     //! Assert
     expect(stickerRepository.createSticker).toHaveBeenCalledWith(fileBuffer.toString('base64'))
+  })
+  test('ensure call sticker repository to create a sticker if body is #sticker and quotedMsgObj != null and quotedMsg type == "video"', async () => {
+    //! Arrange
+    const { responseMessage, stickerRepository, chatBot, fileBuffer } = makeSut()
+    responseMessage.caption = undefined
+    responseMessage.quotedMsg.type = 'video'
+    //! Act
+    await chatBot.onAnyMessage(responseMessage)
+    //! Assert
+    expect(stickerRepository.createSticker).toHaveBeenCalledWith(fileBuffer.toString('base64'))
+  })
+  test('ensure not call sticker repository to create a sticker and send a message if body is #sticker and quotedMsgObj != null but quotedMsg not is a video/image', async () => {
+    //! Arrange
+    const { responseMessage, stickerRepository, chatBot, whatsApp } = makeSut()
+    responseMessage.caption = undefined
+    responseMessage.quotedMsg.type = 'undefined'
+    jest.spyOn(whatsApp, 'reply')
+    //! Act
+    await chatBot.onAnyMessage(responseMessage)
+    //! Assert
+    expect(stickerRepository.createSticker).toHaveBeenCalledTimes(0)
+    expect(whatsApp.reply).toHaveBeenCalledWith(responseMessage.chatId, '😔 Eu não consigo fazer uma figurinha disso 😔', responseMessage.id.toString())
   })
   test('ensure call sticker repository to create a sticker if caption is #sticker', async () => {
     //! Arrange

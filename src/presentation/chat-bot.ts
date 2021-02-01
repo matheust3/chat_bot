@@ -14,14 +14,17 @@ export class ChatBot {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async onAnyMessage (message: any): Promise<void> {
-    console.log(message)
     if (message.caption !== undefined && message.caption !== null) {
       message.caption = message.caption.toLowerCase()
     }
     if (message.caption !== undefined && message.caption === '#sticker') {
       await this.createSticker(message)
     } else if (message.body !== undefined && message.body === '#sticker' && message.quotedMsgObj !== null) {
-      await this.createSticker(message.quotedMsgObj)
+      if (message.quotedMsg.type === 'video' || message.quotedMsg.type === 'image') {
+        await this.createSticker(message.quotedMsgObj)
+      } else {
+        await this._client.reply(message.chatId, '😔 Eu não consigo fazer uma figurinha disso 😔', message.id.toString())
+      }
     }
   }
 
