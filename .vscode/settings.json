@@ -4,6 +4,7 @@
     "Postgres",
     "bbox",
     "ffprobe",
+    "loglevel",
     "mogrify",
     "ndvi",
     "webp",
