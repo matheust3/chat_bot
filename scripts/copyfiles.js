@@ -1,7 +1,7 @@
 var ncp = require('ncp').ncp;
 
-const srcDir = ["src/static"];
-const destDir = ["dist/static"];
+const srcDir = [];
+const destDir = [];
 
 
 ncp.limit = 16;
