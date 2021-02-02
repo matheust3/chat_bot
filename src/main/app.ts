@@ -4,11 +4,21 @@ import { CheckDataTypeDatasourceImpl } from '../infra/check-data-type-datasource
 import { CreateStaticStickerDatasourceImpl } from '../infra/create-static-sticker-datasource-impl'
 import { CreateAnimatedStickerDatasourceImpl } from '../infra/create-animated-sticker-datasource-impl'
 import { ChatBot } from '../presentation/chat-bot'
+import { promisify } from 'util'
+import child_process from 'child_process'
 
 const createStaticStickerDatasource = new CreateStaticStickerDatasourceImpl()
 const createAnimatedStickerDatasource = new CreateAnimatedStickerDatasourceImpl()
 const checkDataTypeDatasource = new CheckDataTypeDatasourceImpl()
 const stickerRepository = new StickerRepositoryImpl(createStaticStickerDatasource, checkDataTypeDatasource, createAnimatedStickerDatasource)
+
+// Apaga os arquivos da pasta 'cache' com mais de um dia
+setInterval(() => {
+  const exec = promisify(child_process.exec)
+  exec(`find ${__dirname}/../cache -type f -mtime +1 -delete`).catch((err) => {
+    console.log('Erro ao limpar a pasta cache ', err)
+  })
+}, 900000)
 
 create('chat-bot', null, null, { browserArgs: ['--no-sandbox'] }).then((client) => {
   const chatBot = new ChatBot(client, stickerRepository)
