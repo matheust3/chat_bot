@@ -14,16 +14,21 @@ export class CreateAnimatedStickerDatasourceImpl implements CreateAnimatedSticke
     fs.writeFileSync(`${__dirname}/../cache/${uuid}`, data)
 
     const exec = promisify(child_process.exec)
-    const { stdout, stderr } = await exec(`ffprobe -v error -show_entries stream=width,height -of csv=p=0:s=x ${__dirname}/../cache/${uuid}`)
+    const { stdout, stderr } = await exec(`ffprobe -v quiet -print_format json -show_streams ${__dirname}/../cache/${uuid}`)
     if (stderr === '') {
-      const height = parseFloat(stdout.split('x')[1])
-      const width = parseFloat(stdout.split('x')[0])
+      const mediaData = JSON.parse(stdout)
+      let height = mediaData.streams[0].height
+      let width = mediaData.streams[0].width
+      if (mediaData.streams[0]?.tags?.rotate !== undefined && Math.abs(mediaData.streams[0].tags.rotate) === 90) {
+        height = mediaData.streams[0].width
+        width = mediaData.streams[0].height
+      }
       let err: string
       if (width > height) {
-        const { stderr } = await exec(`ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "crop=w=(iw+(ih-iw)):h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/${uuid}.webp -hide_banner -loglevel error`)
+        const { stderr } = await exec(`ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "crop=w=ih:h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/${uuid}.webp -hide_banner -loglevel error`)
         err = stderr
       } else {
-        const { stderr } = await exec(`ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "crop=w=iw:h=(ih+(iw-ih)):x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/${uuid}.webp -hide_banner -loglevel error`)
+        const { stderr } = await exec(`ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "crop=w=iw:h=iw:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/${uuid}.webp -hide_banner -loglevel error`)
         err = stderr
       }
       if (err !== '') {

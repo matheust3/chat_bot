@@ -26,6 +26,8 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
   test('ensure check if cache exists', async () => {
     //! Arrange
     const { datasource } = makeSut()
+    execFunc.mockClear().mockResolvedValueOnce({ stdout: '{"streams":[{"width": 1920,"height": 1080}]}', stderr: '' })
+      .mockResolvedValue({ stdout: '', stderr: '' })
     //! Act
     await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
@@ -34,6 +36,8 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
   test('ensure create cache folder if not exists', async () => {
     //! Arrange
     const { datasource } = makeSut()
+    execFunc.mockClear().mockResolvedValueOnce({ stdout: '{"streams":[{"width": 1920,"height": 1080}]}', stderr: '' })
+      .mockResolvedValue({ stdout: '', stderr: '' })
     jest.spyOn(fs, 'existsSync').mockReturnValue(false)
     jest.spyOn(fs, 'mkdirSync')
     //! Act
@@ -44,6 +48,8 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
   test('ensure save file in cache folder to convert to png image', async () => {
     //! Arrange
     const { datasource } = makeSut()
+    execFunc.mockClear().mockResolvedValueOnce({ stdout: '{"streams":[{"width": 1920,"height": 1080}]}', stderr: '' })
+      .mockResolvedValue({ stdout: '', stderr: '' })
     const buffer = Buffer.from('any buffer')
     //! Act
     await datasource.createSticker(buffer)
@@ -53,33 +59,46 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
   test('ensure convert file to a webp if width>height', async () => {
     //! Arrange
     const { datasource } = makeSut()
-    execFunc.mockClear().mockResolvedValueOnce({ stdout: '320x240', stderr: '' })
+    execFunc.mockClear().mockResolvedValueOnce({ stdout: '{"streams":[{"width": 1920,"height": 1080}]}', stderr: '' })
       .mockResolvedValue({ stdout: '', stderr: '' })
     //! Act
     await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
     expect(execFunc.mock.calls).toEqual([
-      [`ffprobe -v error -show_entries stream=width,height -of csv=p=0:s=x ${__dirname}/../cache/uId`],
-      [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=(iw+(ih-iw)):h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
+      [`ffprobe -v quiet -print_format json -show_streams ${__dirname}/../cache/uId`],
+      [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=ih:h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
     ])
   })
   test('ensure convert file to a webp if width<height', async () => {
     //! Arrange
     const { datasource } = makeSut()
-    execFunc.mockClear().mockResolvedValueOnce({ stdout: '240x320', stderr: '' })
+    execFunc.mockClear().mockResolvedValueOnce({ stdout: '{"streams":[{"width": 1080,"height": 1920}]}', stderr: '' })
       .mockResolvedValue({ stdout: '', stderr: '' })
     //! Act
     await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
     expect(execFunc.mock.calls).toEqual([
-      [`ffprobe -v error -show_entries stream=width,height -of csv=p=0:s=x ${__dirname}/../cache/uId`],
-      [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=iw:h=(ih+(iw-ih)):x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
+      [`ffprobe -v quiet -print_format json -show_streams ${__dirname}/../cache/uId`],
+      [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=iw:h=iw:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
+    ])
+  })
+  test('ensure convert file and invert height and width if tag rotate=90', async () => {
+    //! Arrange
+    const { datasource } = makeSut()
+    execFunc.mockClear().mockResolvedValueOnce({ stdout: '{"streams":[{"width": 1080,"height": 1920,"tags":{"rotate":"90"}}]}', stderr: '' })
+      .mockResolvedValue({ stdout: '', stderr: '' })
+    //! Act
+    await datasource.createSticker(Buffer.from('any buffer'))
+    //! Assert
+    expect(execFunc.mock.calls).toEqual([
+      [`ffprobe -v quiet -print_format json -show_streams ${__dirname}/../cache/uId`],
+      [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=ih:h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
     ])
   })
   test('ensure return path to new file', async () => {
     //! Arrange
     const { datasource } = makeSut()
-    execFunc.mockClear().mockResolvedValueOnce({ stdout: '320x240', stderr: '' })
+    execFunc.mockClear().mockResolvedValueOnce({ stdout: '{"streams":[{"width": 1920,"height": 1080}]}', stderr: '' })
       .mockResolvedValue({ stdout: '', stderr: '' })
     //! Act
     const result = await datasource.createSticker(Buffer.from('any buffer'))
@@ -102,7 +121,7 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
     //! Arrange
     const { datasource } = makeSut()
     jest.spyOn(global.console, 'error')
-    execFunc.mockClear().mockResolvedValueOnce({ stdout: '320x240', stderr: '' })
+    execFunc.mockClear().mockResolvedValueOnce({ stdout: '{"streams":[{"width": 1920,"height": 1080}]}', stderr: '' })
       .mockResolvedValue({ stdout: '', stderr: 'err' })
     //! Act
     const result = await datasource.createSticker(Buffer.from('any buffer'))
