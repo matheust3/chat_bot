@@ -17,13 +17,20 @@ export class ChatBot {
     if (message.caption !== undefined && message.caption !== null) {
       message.caption = message.caption.toLowerCase()
     }
-    if (message.caption !== undefined && message.caption === '#sticker') {
-      await this.createSticker(message)
-    } else if (message.body !== undefined && message.body === '#sticker' && message.quotedMsgObj !== null) {
-      if (message.quotedMsg.type === 'video' || message.quotedMsg.type === 'image') {
-        await this.createSticker(message.quotedMsgObj)
+    if ((message.caption !== undefined && message.caption === '#sticker') || (message.body !== undefined && message.body === '#sticker' && message.quotedMsgObj !== null)) {
+      const msg: WhatsMessage = message
+      if (msg.isGroupMsg || msg.sender.isMyContact) {
+        if (message.body === '#sticker') {
+          if (message.quotedMsg.type === 'video' || message.quotedMsg.type === 'image') {
+            await this.createSticker(message.quotedMsgObj)
+          } else {
+            await this._client.reply(message.chatId, '😔 Eu não consigo fazer uma figurinha disso 😔', message.id.toString())
+          }
+        } else {
+          await this.createSticker(message)
+        }
       } else {
-        await this._client.reply(message.chatId, '😔 Eu não consigo fazer uma figurinha disso 😔', message.id.toString())
+        await this._client.sendText(msg.chatId, '=> Esta é uma mensagem do bot <=\n\nMeu criador só autoriza seus contatos a fazerem figurinhas no privado, mas você ainda pode me usar nos grupos em que meu criador participa\n\nAqui esta um desses grupos:\nhttps://chat.whatsapp.com/BSs7Gj45KcUA014nWw8bBb')
       }
     }
   }

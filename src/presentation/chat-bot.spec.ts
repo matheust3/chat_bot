@@ -68,6 +68,20 @@ describe('ChatBot -- #sticker', () => {
     //! Assert
     expect(stickerRepository.createSticker).toHaveBeenCalledWith(fileBuffer.toString('base64'))
   })
+  test('ensure send a message if not is my contact and is my private chat', async () => {
+    //! Arrange
+    const { responseMessage, stickerRepository, chatBot, whatsApp } = makeSut()
+    jest.spyOn(whatsApp, 'sendText')
+    responseMessage.caption = undefined
+    responseMessage.quotedMsg.type = 'video'
+    responseMessage.isGroupMsg = false
+    responseMessage.sender.isMyContact = false
+    //! Act
+    await chatBot.onAnyMessage(responseMessage)
+    //! Assert
+    expect(stickerRepository.createSticker).toHaveBeenCalledTimes(0)
+    expect(whatsApp.sendText).toHaveBeenCalledWith(responseMessage.chatId, '=> Esta é uma mensagem do bot <=\n\nMeu criador só autoriza seus contatos a fazerem figurinhas no privado, mas você ainda pode me usar nos grupos em que meu criador participa\n\nAqui esta um desses grupos:\nhttps://chat.whatsapp.com/BSs7Gj45KcUA014nWw8bBb')
+  })
   test('ensure not call sticker repository to create a sticker and send a message if body is #sticker and quotedMsgObj != null but quotedMsg not is a video/image', async () => {
     //! Arrange
     const { responseMessage, stickerRepository, chatBot, whatsApp } = makeSut()
