@@ -82,6 +82,18 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
       [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=iw:h=iw:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
     ])
   })
+  test('ensure return null if mediaData.streams[0] is null', async () => {
+    //! Arrange
+    const { datasource } = makeSut()
+    execFunc.mockClear().mockResolvedValueOnce({ stdout: '{"streams":[]}', stderr: '' })
+      .mockResolvedValue({ stdout: '', stderr: '' })
+    jest.spyOn(global.console, 'error')
+    //! Act
+    const result = await datasource.createSticker(Buffer.from('any buffer'))
+    //! Assert
+    expect(result).toEqual(null)
+    expect(console.error).toHaveBeenCalledWith('media.streams.length === 0')
+  })
   test('ensure convert file and invert height and width if tag rotate=90', async () => {
     //! Arrange
     const { datasource } = makeSut()

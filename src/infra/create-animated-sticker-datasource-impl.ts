@@ -17,11 +17,18 @@ export class CreateAnimatedStickerDatasourceImpl implements CreateAnimatedSticke
     const { stdout, stderr } = await exec(`ffprobe -v quiet -print_format json -show_streams ${__dirname}/../cache/${uuid}`)
     if (stderr === '') {
       const mediaData = JSON.parse(stdout)
-      let height = mediaData.streams[0].height
-      let width = mediaData.streams[0].width
-      if (mediaData.streams[0]?.tags?.rotate !== undefined && Math.abs(mediaData.streams[0].tags.rotate) === 90) {
-        height = mediaData.streams[0].width
-        width = mediaData.streams[0].height
+      let height: number
+      let width: number
+      if (mediaData.streams.length > 0) {
+        height = mediaData.streams[0].height
+        width = mediaData.streams[0].width
+        if (mediaData.streams[0].tags?.rotate !== undefined && Math.abs(mediaData.streams[0].tags.rotate) === 90) {
+          height = mediaData.streams[0].width
+          width = mediaData.streams[0].height
+        }
+      } else {
+        console.error('media.streams.length === 0')
+        return null
       }
       let err: string
       if (width > height) {
