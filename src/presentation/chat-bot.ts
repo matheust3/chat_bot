@@ -19,7 +19,7 @@ export class ChatBot {
     }
     if ((message.caption !== undefined && message.caption === '#sticker') || (message.body !== undefined && message.body === '#sticker' && message.quotedMsgObj !== null)) {
       const msg: WhatsMessage = message
-      if (msg.isGroupMsg || msg.sender.isMyContact) {
+      if (msg.isGroupMsg || msg.sender.isMyContact || msg.fromMe) {
         if (message.body === '#sticker') {
           if (message.quotedMsg.type === 'video' || message.quotedMsg.type === 'image') {
             await this.createSticker(message.quotedMsgObj)

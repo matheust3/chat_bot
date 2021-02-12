@@ -68,7 +68,7 @@ describe('ChatBot -- #sticker', () => {
     //! Assert
     expect(stickerRepository.createSticker).toHaveBeenCalledWith(fileBuffer.toString('base64'))
   })
-  test('ensure send a message if not is my contact and is my private chat', async () => {
+  test('ensure send a message if not is my contact and is my private chat and not is fromMe', async () => {
     //! Arrange
     const { responseMessage, stickerRepository, chatBot, whatsApp } = makeSut()
     jest.spyOn(whatsApp, 'sendText')
@@ -76,6 +76,7 @@ describe('ChatBot -- #sticker', () => {
     responseMessage.quotedMsg.type = 'video'
     responseMessage.isGroupMsg = false
     responseMessage.sender.isMyContact = false
+    responseMessage.fromMe = false
     //! Act
     await chatBot.onAnyMessage(responseMessage)
     //! Assert
@@ -98,6 +99,16 @@ describe('ChatBot -- #sticker', () => {
     //! Arrange
     const { message, stickerRepository, chatBot, fileBuffer } = makeSut()
     message.caption = '#sticker'
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(stickerRepository.createSticker).toHaveBeenCalledWith(fileBuffer.toString('base64'))
+  })
+  test('ensure call sticker repository to create a sticker if caption is #sticker and is fromMe', async () => {
+    //! Arrange
+    const { message, stickerRepository, chatBot, fileBuffer } = makeSut()
+    message.caption = '#sticker'
+    message.fromMe = true
     //! Act
     await chatBot.onAnyMessage(message)
     //! Assert
