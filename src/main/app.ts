@@ -6,6 +6,7 @@ import { CreateAnimatedStickerDatasourceImpl } from '../infra/create-animated-st
 import { ChatBot } from '../presentation/chat-bot'
 import { promisify } from 'util'
 import child_process from 'child_process'
+import fs from 'fs'
 
 const createStaticStickerDatasource = new CreateStaticStickerDatasourceImpl()
 const createAnimatedStickerDatasource = new CreateAnimatedStickerDatasourceImpl()
@@ -14,10 +15,15 @@ const stickerRepository = new StickerRepositoryImpl(createStaticStickerDatasourc
 
 // Apaga os arquivos da pasta 'cache' com mais de um dia
 setInterval(() => {
-  const exec = promisify(child_process.exec)
-  exec(`find ${__dirname}/../cache -type f -mtime +1 -delete`).catch((err) => {
-    console.log('Erro ao limpar a pasta cache ', err)
-  })
+  /* istanbul ignore else */
+  if (fs.existsSync(`${__dirname}/../cache`)) {
+    const exec = promisify(child_process.exec)
+    exec(`find ${__dirname}/../cache -type f -mtime +1 -delete`).then(() => {
+      console.log('Cache limpo!')
+    }).catch((err) => {
+      console.log('Erro ao limpar a pasta cache ', err)
+    })
+  }
 }, 900000)
 
 create('chat-bot', null, null, { browserArgs: ['--no-sandbox'] }).then((client) => {
