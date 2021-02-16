@@ -1,13 +1,14 @@
 {
   "cSpell.words": [
-    "Mapnik",
-    "Postgres",
-    "bbox",
-    "ffprobe",
-    "loglevel",
-    "mogrify",
-    "ndvi",
-    "webp",
-    "whatsapp"
-  ]
+		"Mapnik",
+		"Postgres",
+		"bbox",
+		"ffprobe",
+		"loglevel",
+		"mogrify",
+		"ndvi",
+		"qrcode",
+		"webp",
+		"whatsapp"
+	]
 }

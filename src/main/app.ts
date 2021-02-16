@@ -1,4 +1,4 @@
-import { create } from 'venom-bot'
+import { Client } from 'whatsapp-web.js'
 import { StickerRepositoryImpl } from '../data/repositories/sticker-repository-impl'
 import { CheckDataTypeDatasourceImpl } from '../infra/check-data-type-datasource-impl'
 import { CreateStaticStickerDatasourceImpl } from '../infra/create-static-sticker-datasource-impl'
@@ -7,6 +7,7 @@ import { ChatBot } from '../presentation/chat-bot'
 import { promisify } from 'util'
 import child_process from 'child_process'
 import fs from 'fs'
+import qrCode from 'qrcode-terminal'
 
 const createStaticStickerDatasource = new CreateStaticStickerDatasourceImpl()
 const createAnimatedStickerDatasource = new CreateAnimatedStickerDatasourceImpl()
@@ -26,16 +27,52 @@ setInterval(() => {
   }
 }, 900000)
 
-create('chat-bot', null, null, { browserArgs: ['--no-sandbox'] }).then((client) => {
-  const chatBot = new ChatBot(client, stickerRepository)
-  client.onAnyMessage((message) => {
-    chatBot.onAnyMessage(message).catch((error) => {
-      console.error('Error na função onAnyMessage da classe ChatBot --> ', error)
-    })
-  }).catch((error) => {
-    console.error('Erro em onAnyMessage --> ', error)
+//= ====================================================
+//                 Inicia o Bot
+//= ====================================================
+
+const SESSION_FILE_PATH = `${__dirname}/../../tokens/session.json`
+let sessionCfg
+
+if (fs.existsSync(SESSION_FILE_PATH)) {
+  sessionCfg = JSON.parse(fs.readFileSync(SESSION_FILE_PATH).toString('ascii'))
+}
+
+const client = new Client({ puppeteer: { headless: true, args: ['--no-sandbox'] }, session: sessionCfg })
+const chatBot = new ChatBot(client, stickerRepository)
+// Print o qrcode no console
+client.on('qr', (qr) => {
+  qrCode.generate(qr, { small: true })
+})
+// Quando a sessão eh autenticada
+client.on('authenticated', (session) => {
+  console.log('AUTHENTICATED', session)
+  sessionCfg = session
+  fs.writeFile(SESSION_FILE_PATH, JSON.stringify(session), function (err) {
+    if (err !== null) {
+      console.error(err)
+    }
   })
 })
-  .catch((erro) => {
-    console.log(erro)
-  })
+// Quando ha falha na sessão
+client.on('auth_failure', msg => {
+  // Fired if session restore was unsuccessfully
+  console.error('AUTHENTICATION FAILURE', msg)
+})
+// Quando esta pronto
+client.on('ready', () => {
+  console.log('READY')
+})
+
+// Quando recebe qualquer mensagem
+client.on('message_create', msg => {
+  chatBot.onAnyMessage(msg).catch((error) => console.error('Erro na função onAnyMessage => ', error))
+})
+
+//
+// Inicia o bot
+//
+
+client.initialize().then((_) => {
+  console.log('Iniciado')
+}).catch((error) => console.error('Erro ao iniciar o cliente', error))
