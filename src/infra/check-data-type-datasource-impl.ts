@@ -4,7 +4,7 @@ import fileType from 'file-type'
 
 export class CheckDataTypeDatasourceImpl implements CheckDataTypeDatasource {
   private readonly _staticStickerTypes = ['png', 'jpg', 'jpeg']
-  private readonly _animatedStickerTypes = ['mp4', 'gif']
+  private readonly _animatedStickerTypes = ['mp4', 'gif', 'webp']
 
   async fromBuffer (buffer: Buffer): Promise<DataType> {
     const type = await fileType.fromBuffer(buffer)
