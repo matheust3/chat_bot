@@ -66,7 +66,7 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
     //! Assert
     expect(execFunc.mock.calls).toEqual([
       [`ffprobe -v quiet -print_format json -show_streams ${__dirname}/../cache/uId`],
-      [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=ih:h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
+      [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=ih:h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=512:512,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
     ])
   })
   test('ensure convert file to a webp if width<height', async () => {
@@ -79,7 +79,7 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
     //! Assert
     expect(execFunc.mock.calls).toEqual([
       [`ffprobe -v quiet -print_format json -show_streams ${__dirname}/../cache/uId`],
-      [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=iw:h=iw:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
+      [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=iw:h=iw:x=(iw/2)/2:y=(ih/2)/2,scale=512:512,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
     ])
   })
   test('ensure return null if mediaData.streams[0] is null', async () => {
@@ -104,7 +104,7 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
     //! Assert
     expect(execFunc.mock.calls).toEqual([
       [`ffprobe -v quiet -print_format json -show_streams ${__dirname}/../cache/uId`],
-      [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=ih:h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
+      [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=ih:h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=512:512,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
     ])
   })
   test('ensure return path to new file', async () => {

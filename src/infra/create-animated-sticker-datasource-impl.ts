@@ -32,10 +32,10 @@ export class CreateAnimatedStickerDatasourceImpl implements CreateAnimatedSticke
       }
       let err: string
       if (width > height) {
-        const { stderr } = await exec(`ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "crop=w=ih:h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/${uuid}.webp -hide_banner -loglevel error`)
+        const { stderr } = await exec(`ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "crop=w=ih:h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=512:512,fps=10" -loop 0 ${__dirname}/../cache/${uuid}.webp -hide_banner -loglevel error`)
         err = stderr
       } else {
-        const { stderr } = await exec(`ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "crop=w=iw:h=iw:x=(iw/2)/2:y=(ih/2)/2,scale=128:128,fps=10" -loop 0 ${__dirname}/../cache/${uuid}.webp -hide_banner -loglevel error`)
+        const { stderr } = await exec(`ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "crop=w=iw:h=iw:x=(iw/2)/2:y=(ih/2)/2,scale=512:512,fps=10" -loop 0 ${__dirname}/../cache/${uuid}.webp -hide_banner -loglevel error`)
         err = stderr
       }
       if (err !== '') {
