@@ -16,7 +16,7 @@ export class ChatBot {
     const chat = await message.getChat()
     if ((message.hasMedia && message.body === '#sticker') || (message.body !== undefined && message.body === '#sticker' && message.hasQuotedMsg)) {
       const contact = await message.getContact()
-      if (contact.isGroup || message.fromMe || contact.isMyContact) {
+      if (chat.isGroup || message.fromMe || contact.isMyContact) {
         if (message.body === '#sticker' && message.hasQuotedMsg) {
           const quotedMsg = await message.getQuotedMessage()
           if (quotedMsg.hasMedia) {
