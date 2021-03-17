@@ -17,7 +17,7 @@ export class ChatBot {
     const chat = await message.getChat()
     if ((message.hasMedia && message.body === '#sticker') || (message.body !== undefined && message.body === '#sticker' && message.hasQuotedMsg)) {
       const contact = await message.getContact()
-      if (chat.isGroup || message.fromMe || contact.isMyContact) {
+      if ((chat.isGroup || message.fromMe || contact.isMyContact) && (!contact.isBlocked)) {
         if (message.body === '#sticker' && message.hasQuotedMsg) {
           const quotedMsg = await message.getQuotedMessage()
           if (quotedMsg.hasMedia) {
@@ -29,7 +29,11 @@ export class ChatBot {
           await this.createSticker(message, false, chat)
         }
       } else {
-        await this._client.sendMessage(chat.id._serialized, '=> Esta é uma mensagem do bot <=\n\nMeu criador só autoriza seus contatos a fazerem figurinhas no privado, mas você ainda pode me usar nos grupos em que meu criador participa\n\nAqui esta um desses grupos:\nhttps://chat.whatsapp.com/BSs7Gj45KcUA014nWw8bBb')
+        if (contact.isBlocked) {
+          await message.reply('🥱')
+        } else {
+          await this._client.sendMessage(chat.id._serialized, '=> Esta é uma mensagem do bot <=\n\nMeu criador só autoriza seus contatos a fazerem figurinhas no privado, mas você ainda pode me usar nos grupos em que meu criador participa\n\nAqui esta um desses grupos:\nhttps://chat.whatsapp.com/BSs7Gj45KcUA014nWw8bBb')
+        }
       }
     }
   }

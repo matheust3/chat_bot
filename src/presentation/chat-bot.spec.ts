@@ -28,6 +28,7 @@ const makeSut = (): SutTypes => {
   chat.id._serialized = 'id of chat'
   chat.isGroup = true
   const contact: Contact = mock<Contact>()
+  contact.isBlocked = false
   const mediaMessage: MessageMedia = {
     data: fileBuffer.toString('base64'),
     mimetype: 'image',
@@ -209,5 +210,16 @@ describe('ChatBot -- #sticker', () => {
     expect(message.reply).toHaveBeenCalledWith('👾 Não consegui converter o arquivo para um sticker 👾 - Fale com meu criador se você continuar recebendo essa mensagem')
     expect(message.reply).toHaveBeenCalledTimes(1)
     expect(console.error).toHaveBeenCalledWith(Error('test error - create sticker'))
+  })
+
+  test('ensure send a joke if contact is blocked ', async () => {
+    //! Arrange
+    const { chatBot, message, contact } = makeSut()
+    contact.isBlocked = true
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(message.reply).toHaveBeenCalledWith('🥱')
+    expect(message.reply).toHaveBeenCalledTimes(1)
   })
 })
