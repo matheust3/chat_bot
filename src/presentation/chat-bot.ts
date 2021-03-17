@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { Chat, Client as Whatsapp, Message, MessageMedia } from 'whatsapp-web.js'
+import { Sticker } from '../domain/models/sticker'
 import { StickerRepository } from '../domain/repositories/sticker-repository'
 export class ChatBot {
   private readonly _client: Whatsapp
@@ -35,24 +36,36 @@ export class ChatBot {
 
   async createSticker (message: Message, isQuoted: boolean, chat: Chat): Promise<void> {
     const mediaMessage = isQuoted ? (await message.getQuotedMessage()) : message
-    const msgMedia = await mediaMessage.downloadMedia()
+    let msgMedia: MessageMedia
+    try {
+      msgMedia = await mediaMessage.downloadMedia()
+    } catch (e) {
+      await mediaMessage.reply('Nao consegui baixar a imagem pra fazer a figurinha 😪😪')
+      console.error(e)
+      return
+    }
     if (msgMedia.mimetype.includes('video') || msgMedia.mimetype.includes('image')) {
+      let result: Sticker
       try {
-        const result = await this._stickerRepository.createSticker(msgMedia.data)
-        if (result?.valid) {
-          const media = MessageMedia.fromFilePath(result.path)
+        result = await this._stickerRepository.createSticker(msgMedia.data)
+      } catch (e) {
+        await message.reply('👾 Não consegui converter o arquivo para um sticker 👾 - Fale com meu criador se você continuar recebendo essa mensagem')
+        console.error(e)
+        return
+      }
+      if (result?.valid) {
+        const media = MessageMedia.fromFilePath(result.path)
+        try {
           await this._client.sendMessage(chat.id._serialized, null, { media: media, sendMediaAsSticker: true })
-        } else {
-          await message.reply('😣 Não foi possível criar sua figurinha 😭')
-        }
-      } catch (err) {
-        await message.reply('Nao consegui fazer sua figurinha 😓😓')
-        if (err.message !== undefined && err.message.includes('Evaluation failed: n') === false) {
+        } catch (err) {
+          await message.reply('Nao consegui enviar sua figurinha 😓 - Tente diminuir o tamanho do arquivo (em MB)')
           console.error(err)
         }
+      } else {
+        await message.reply('Não foi possível criar sua figurinha 😣')
       }
     } else {
-      await message.reply('😔 Eu não consigo fazer uma figurinha disso 😔')
+      await message.reply('Eu não consigo fazer uma figurinha disso 😔')
     }
   }
 }
