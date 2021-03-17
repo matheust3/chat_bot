@@ -20,11 +20,12 @@ export class CreateAnimatedStickerDatasourceImpl implements CreateAnimatedSticke
       let height: number
       let width: number
       if (mediaData.streams.length > 0) {
-        height = mediaData.streams[0].height
-        width = mediaData.streams[0].width
-        if (mediaData.streams[0].tags?.rotate !== undefined && Math.abs(mediaData.streams[0].tags.rotate) === 90) {
-          height = mediaData.streams[0].width
-          width = mediaData.streams[0].height
+        const stream = mediaData.streams.find((value: { codec_type: string }) => (value.codec_type).includes('video'))
+        height = stream.height
+        width = stream.width
+        if (stream.tags?.rotate !== undefined && (Math.abs(stream.tags.rotate) === 90 || Math.abs(stream.tags.rotate) === 270)) {
+          height = stream.width
+          width = stream.height
         }
       } else {
         console.error('media.streams.length === 0')
