@@ -62,7 +62,7 @@ export class ChatBot {
           console.error(err)
         }
       } else {
-        await message.reply('Não foi possível criar sua figurinha 😣')
+        await message.reply('Não foi possível criar sua figurinha 😣 - Talvez o formato do arquivo não é suportado')
       }
     } else {
       await message.reply('Eu não consigo fazer uma figurinha disso 😔')

@@ -174,7 +174,7 @@ describe('ChatBot -- #sticker', () => {
     //! Act
     await chatBot.onAnyMessage(message)
     //! Assert
-    expect(message.reply).toHaveBeenCalledWith('Não foi possível criar sua figurinha 😣')
+    expect(message.reply).toHaveBeenCalledWith('Não foi possível criar sua figurinha 😣 - Talvez o formato do arquivo não é suportado')
   })
   test('ensure send a message if downloadMedia throws', async () => {
     //! Arrange
