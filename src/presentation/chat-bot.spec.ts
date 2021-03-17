@@ -61,7 +61,7 @@ const makeSut = (): SutTypes => {
 }
 
 describe('ChatBot', () => {
-  test('ensure remove case sensitive from bodys', async () => {
+  test('ensure remove case sensitive from body', async () => {
     //! Arrange
     const { message, stickerRepository, chatBot, fileBuffer } = makeSut()
     message.body = '#sTicKer'
