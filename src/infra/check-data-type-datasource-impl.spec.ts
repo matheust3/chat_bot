@@ -60,15 +60,7 @@ describe('CheckDataTypeDatasourceImpl', () => {
     //! Assert
     expect(result).toBe('stickerAnimated' as DataType)
   })
-  test('ensure return animatedSticker if data is webp', async () => {
-    //! Arrange
-    const { datasource } = makeSut()
-    const buffer = fs.readFileSync(`${__dirname}/../../fixtures/webp.webp`)
-    //! Act
-    const result = await datasource.fromBuffer(buffer)
-    //! Assert
-    expect(result).toBe('stickerAnimated' as DataType)
-  })
+
   test('ensure return invalid if data is not a static image and not a animated/video', async () => {
     //! Arrange
     const { datasource } = makeSut()
