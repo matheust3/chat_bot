@@ -61,7 +61,7 @@ client.on('auth_failure', msg => {
 })
 // Quando esta pronto
 client.on('ready', () => {
-  console.log('READY')
+  client.getWWebVersion().then(version => console.log('READY - WhatApp Web version:', version)).catch(e => console.error('Erro ao pegar a versão -> ', e))
 })
 
 // Quando recebe qualquer mensagem
