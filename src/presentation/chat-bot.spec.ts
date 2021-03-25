@@ -1,5 +1,5 @@
 import { mock, MockProxy } from 'jest-mock-extended'
-import { Chat, Client as Whatsapp, Contact, Message, MessageMedia } from 'whatsapp-web.js'
+import { Chat, Client as Whatsapp, Contact, GroupChat, Message, MessageMedia } from 'whatsapp-web.js'
 import { StickerRepository } from '../domain/repositories/sticker-repository'
 import { ChatBot } from './chat-bot'
 
@@ -27,8 +27,11 @@ const makeSut = (): SutTypes => {
   const chat: Chat = mock<Chat>()
   chat.id._serialized = 'id of chat'
   chat.isGroup = true
+  chat.name = ''
   const contact: Contact = mock<Contact>()
   contact.isBlocked = false
+  contact.id._serialized = 'any id'
+
   const mediaMessage: MessageMedia = {
     data: fileBuffer.toString('base64'),
     mimetype: 'image',
@@ -69,6 +72,39 @@ describe('ChatBot', () => {
     await chatBot.onAnyMessage(message)
     //! Assert
     expect(stickerRepository.createSticker).toHaveBeenCalledWith(fileBuffer.toString('base64'))
+  })
+})
+
+describe('chat-bot.spec.ts - check for links', () => {
+  test('ensure remove user if message as link', async () => {
+    //! Arrange
+    const { message, chatBot, chat } = makeSut()
+    const groupChat: GroupChat = chat as GroupChat
+    message.body = 'teste de texto com um link http://link.com'
+    groupChat.isGroup = true
+    groupChat.name = 'figurinhas'
+    message.fromMe = false
+    //! Act
+    const result = await chatBot.checkForLinkInGroup(message, groupChat)
+    //! Assert
+    expect(result).toEqual(true)
+    expect(message.reply).toHaveBeenCalledWith('Mensagem do Bot: \n🚫 CONTEÚDO MALICIOSO OU FORA DO CONTEXTO DO GRUPO 🚫')
+    expect(groupChat.removeParticipants).toHaveBeenCalledWith(['any id'])
+  })
+  test('ensure jot remove user if message as link and is me', async () => {
+    //! Arrange
+    const { message, chatBot, chat } = makeSut()
+    const groupChat: GroupChat = chat as GroupChat
+    message.body = 'teste de texto com um link http://link.com'
+    groupChat.isGroup = true
+    groupChat.name = 'figurinhas'
+    message.fromMe = true
+    //! Act
+    const result = await chatBot.checkForLinkInGroup(message, groupChat)
+    //! Assert
+    expect(result).toEqual(false)
+    expect(message.reply).toHaveBeenCalledTimes(0)
+    expect(groupChat.removeParticipants).toHaveBeenCalledTimes(0)
   })
 })
 

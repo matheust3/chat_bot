@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-import { Chat, Client as Whatsapp, Message, MessageMedia } from 'whatsapp-web.js'
+import { Chat, GroupChat, Client as Whatsapp, Message, MessageMedia } from 'whatsapp-web.js'
 import { Sticker } from '../domain/models/sticker'
 import { StickerRepository } from '../domain/repositories/sticker-repository'
 export class ChatBot {
@@ -15,6 +15,8 @@ export class ChatBot {
   async onAnyMessage (message: Message): Promise<void> {
     message.body = message.body.toLowerCase()
     const chat = await message.getChat()
+    // Retorna nao faz nada se for banido do grupo
+    if ((await this.checkForLinkInGroup(message, chat))) { return }
     if ((message.hasMedia && message.body === '#sticker') || (message.body !== undefined && message.body === '#sticker' && message.hasQuotedMsg)) {
       const contact = await message.getContact()
       if ((chat.isGroup || message.fromMe || contact.isMyContact) && (!contact.isBlocked)) {
@@ -36,6 +38,25 @@ export class ChatBot {
         }
       }
     }
+  }
+
+  async checkForLinkInGroup (message: Message, chat: Chat): Promise<boolean> {
+    if (chat.isGroup && !message.fromMe) {
+      const groupChat: GroupChat = (chat as GroupChat)
+      if (groupChat.name.toLowerCase().includes('figurinhas')) {
+        if (new RegExp('([a-zA-Z0-9]+://)?([a-zA-Z0-9_]+:[a-zA-Z0-9_]+@)?([a-zA-Z0-9.-]+\\.[A-Za-z]{2,4})(:[0-9]+)?(/.*)?').test(message.body)) {
+          await message.reply('Mensagem do Bot: \n🚫 CONTEÚDO MALICIOSO OU FORA DO CONTEXTO DO GRUPO 🚫')
+          const contact = await message.getContact()
+          await groupChat.removeParticipants([contact.id._serialized])
+          return true
+        } else {
+          return false
+        }
+      } else {
+        return false
+      }
+    }
+    return false
   }
 
   async createSticker (message: Message, isQuoted: boolean, chat: Chat): Promise<void> {
