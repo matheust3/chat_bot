@@ -120,7 +120,7 @@ describe('chat-bot.spec.ts - get group link', () => {
     //! Assert
     expect(result).toBe(true)
     expect(groupChat.getInviteCode).toHaveBeenCalledTimes(1)
-    expect(message.reply).toHaveBeenCalledWith('link')
+    expect(message.reply).toHaveBeenCalledWith('https://chat.whatsapp.com/link')
   })
   test('ensure not reply link group if body is not #link', async () => {
     //! Arrange
@@ -155,7 +155,7 @@ describe('chat-bot.spec.ts - get group link', () => {
     expect(result).toBe(true)
     expect(groupChat.getInviteCode).toHaveBeenCalledTimes(0)
     expect(stickerChat.getInviteCode).toHaveBeenCalledTimes(1)
-    expect(message.reply).toHaveBeenCalledWith('link2')
+    expect(message.reply).toHaveBeenCalledWith('https://chat.whatsapp.com/link2')
   })
   test('ensure reply link group of stickerGroup if is not a group', async () => {
     //! Arrange
@@ -172,7 +172,7 @@ describe('chat-bot.spec.ts - get group link', () => {
     //! Assert
     expect(result).toBe(true)
     expect(stickerChat.getInviteCode).toHaveBeenCalledTimes(1)
-    expect(message.reply).toHaveBeenCalledWith('link2')
+    expect(message.reply).toHaveBeenCalledWith('https://chat.whatsapp.com/link2')
   })
 })
 describe('chat-bot.spec.ts - check for links', () => {

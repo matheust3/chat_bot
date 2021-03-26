@@ -5,7 +5,7 @@ import { StickerRepository } from '../domain/repositories/sticker-repository'
 export class ChatBot {
   private readonly _client: Whatsapp
   private readonly _stickerRepository: StickerRepository
-  private readonly _stickerChatId = 'chatId'
+  private readonly _stickerChatId = '5519993513997-1603762358@g.us'
 
   constructor (client: Whatsapp, stickerRepository: StickerRepository) {
     this._client = client
@@ -19,7 +19,7 @@ export class ChatBot {
     // Retorna e nao faz nada se for banido do grupo
     if ((await this.checkForLinkInGroup(message, chat))) { return }
     // Pega o link do grupo
-    if ((await this.checkForLinkInGroup(message, chat))) { return }
+    if ((await this.getGroupCode(message, chat))) { return }
     // Pega a mensagem de ajuda
     if ((await this.getHelpMessage(message, chat))) { return }
     if ((message.hasMedia && message.body === '#sticker') || (message.body !== undefined && message.body === '#sticker' && message.hasQuotedMsg)) {
@@ -61,7 +61,7 @@ export class ChatBot {
         groupChat = (await this._client.getChatById(this._stickerChatId)) as GroupChat
       }
       const groupCode = await groupChat.getInviteCode()
-      await message.reply(groupCode)
+      await message.reply(`https://chat.whatsapp.com/${groupCode}`)
       return true
     } else {
       return false
