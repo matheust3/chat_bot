@@ -5,6 +5,7 @@ import { StickerRepository } from '../domain/repositories/sticker-repository'
 export class ChatBot {
   private readonly _client: Whatsapp
   private readonly _stickerRepository: StickerRepository
+  private readonly _stickerChatId = 'chatId'
 
   constructor (client: Whatsapp, stickerRepository: StickerRepository) {
     this._client = client
@@ -15,8 +16,12 @@ export class ChatBot {
   async onAnyMessage (message: Message): Promise<void> {
     message.body = message.body.toLowerCase()
     const chat = await message.getChat()
-    // Retorna nao faz nada se for banido do grupo
+    // Retorna e nao faz nada se for banido do grupo
     if ((await this.checkForLinkInGroup(message, chat))) { return }
+    // Pega o link do grupo
+    if ((await this.checkForLinkInGroup(message, chat))) { return }
+    // Pega a mensagem de ajuda
+    if ((await this.getHelpMessage(message, chat))) { return }
     if ((message.hasMedia && message.body === '#sticker') || (message.body !== undefined && message.body === '#sticker' && message.hasQuotedMsg)) {
       const contact = await message.getContact()
       if ((chat.isGroup || message.fromMe || contact.isMyContact) && (!contact.isBlocked)) {
@@ -37,6 +42,29 @@ export class ChatBot {
           await this._client.sendMessage(chat.id._serialized, '=> Esta é uma mensagem do bot <=\n\nMeu criador só autoriza seus contatos a fazerem figurinhas no privado, mas você ainda pode me usar nos grupos em que meu criador participa\n\nAqui esta um desses grupos:\nhttps://chat.whatsapp.com/BSs7Gj45KcUA014nWw8bBb')
         }
       }
+    }
+  }
+
+  async getHelpMessage (message: Message, chat: Chat): Promise<boolean> {
+    if (message.body.toLowerCase().startsWith('#help') ||
+    message.body.toLowerCase().startsWith('#ajuda')) {
+      await message.reply('AJUDA:\n\n#ajuda -> Esta mensagem de ajuda\n#help -> Esta mensagem de ajuda\n#link -> Link do grupo (de figurinhas)\n\nPARA FAZER FIGURINHAS\n\nColocar #sticker na legenda de uma mídia ou responder uma mídia com #sticker')
+      return true
+    }
+    return false
+  }
+
+  async getGroupCode (message: Message, chat: Chat): Promise<boolean> {
+    if (message.body.toLowerCase().startsWith('#link')) {
+      let groupChat: GroupChat = (chat as GroupChat)
+      if (!chat.isGroup || !groupChat.name.toLowerCase().includes('figurinhas')) {
+        groupChat = (await this._client.getChatById(this._stickerChatId)) as GroupChat
+      }
+      const groupCode = await groupChat.getInviteCode()
+      await message.reply(groupCode)
+      return true
+    } else {
+      return false
     }
   }
 

@@ -75,6 +75,106 @@ describe('ChatBot', () => {
   })
 })
 
+describe('chat-bot.spec.ts - getHelpMessage', () => {
+  test('ensure return help message if #ajuda', async () => {
+    //! Arrange
+    const { message, chat, chatBot } = makeSut()
+    message.body = '#ajuda'
+    //! Act
+    const result = await chatBot.getHelpMessage(message, chat)
+    //! Assert
+    expect(result).toBe(true)
+  })
+  test('ensure return help message if #help', async () => {
+    //! Arrange
+    const { message, chat, chatBot } = makeSut()
+    message.body = '#help'
+    //! Act
+    const result = await chatBot.getHelpMessage(message, chat)
+    //! Assert
+    expect(result).toBe(true)
+    expect(message.reply).toHaveBeenCalledWith('AJUDA:\n\n#ajuda -> Esta mensagem de ajuda\n#help -> Esta mensagem de ajuda\n#link -> Link do grupo (de figurinhas)\n\nPARA FAZER FIGURINHAS\n\nColocar #sticker na legenda de uma mídia ou responder uma mídia com #sticker')
+  })
+  test('ensure return false if not is #help or #ajuda', async () => {
+    //! Arrange
+    const { message, chat, chatBot } = makeSut()
+    message.body = 'any message'
+    //! Act
+    const result = await chatBot.getHelpMessage(message, chat)
+    //! Assert
+    expect(result).toBe(false)
+    expect(message.reply).toHaveBeenCalledTimes(0)
+  })
+})
+describe('chat-bot.spec.ts - get group link', () => {
+  test('ensure reply link group', async () => {
+    //! Arrange
+    const { message, chat, chatBot } = makeSut()
+    chat.name = 'figurinhas'
+    chat.isGroup = true
+    message.body = '#link'
+    const groupChat: MockProxy< GroupChat> & GroupChat = chat as (MockProxy< GroupChat> & GroupChat)
+    groupChat.getInviteCode.mockReturnValue(new Promise(resolve => resolve('link')))
+    //! Act
+    const result = await chatBot.getGroupCode(message, groupChat)
+    //! Assert
+    expect(result).toBe(true)
+    expect(groupChat.getInviteCode).toHaveBeenCalledTimes(1)
+    expect(message.reply).toHaveBeenCalledWith('link')
+  })
+  test('ensure not reply link group if body is not #link', async () => {
+    //! Arrange
+    const { message, chat, chatBot } = makeSut()
+    chat.name = 'figurinhas'
+    chat.isGroup = true
+    message.body = 'any'
+    const groupChat: MockProxy< GroupChat> & GroupChat = chat as (MockProxy< GroupChat> & GroupChat)
+    groupChat.getInviteCode.mockReturnValue(new Promise(resolve => resolve('link')))
+    //! Act
+    const result = await chatBot.getGroupCode(message, groupChat)
+    //! Assert
+    expect(result).toBe(false)
+    expect(groupChat.getInviteCode).toHaveBeenCalledTimes(0)
+    expect(message.reply).toHaveBeenCalledTimes(0)
+  })
+  test('ensure reply link group of stickerGroup if group name not contains figurinhas', async () => {
+    //! Arrange
+    const { message, chat, chatBot, whatsApp } = makeSut()
+    const stickerChat = mock<GroupChat>()
+    stickerChat.getInviteCode.mockReturnValue(new Promise(resolve => resolve('link2')))
+    whatsApp.getChatById.mockReturnValue(new Promise(resolve => resolve(stickerChat)))
+
+    chat.name = 'any group name'
+    chat.isGroup = true
+    message.body = '#link'
+    const groupChat: MockProxy< GroupChat> & GroupChat = chat as (MockProxy< GroupChat> & GroupChat)
+    groupChat.getInviteCode.mockReturnValue(new Promise(resolve => resolve('link')))
+    //! Act
+    const result = await chatBot.getGroupCode(message, groupChat)
+    //! Assert
+    expect(result).toBe(true)
+    expect(groupChat.getInviteCode).toHaveBeenCalledTimes(0)
+    expect(stickerChat.getInviteCode).toHaveBeenCalledTimes(1)
+    expect(message.reply).toHaveBeenCalledWith('link2')
+  })
+  test('ensure reply link group of stickerGroup if is not a group', async () => {
+    //! Arrange
+    const { message, chat, chatBot, whatsApp } = makeSut()
+    const stickerChat = mock<GroupChat>()
+    stickerChat.getInviteCode.mockReturnValue(new Promise(resolve => resolve('link2')))
+    whatsApp.getChatById.mockReturnValue(new Promise(resolve => resolve(stickerChat)))
+
+    chat.name = 'any group name'
+    chat.isGroup = false
+    message.body = '#link'
+    //! Act
+    const result = await chatBot.getGroupCode(message, chat)
+    //! Assert
+    expect(result).toBe(true)
+    expect(stickerChat.getInviteCode).toHaveBeenCalledTimes(1)
+    expect(message.reply).toHaveBeenCalledWith('link2')
+  })
+})
 describe('chat-bot.spec.ts - check for links', () => {
   test('ensure remove user if message as link', async () => {
     //! Arrange
