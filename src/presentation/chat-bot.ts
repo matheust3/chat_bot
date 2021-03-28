@@ -16,6 +16,8 @@ export class ChatBot {
   async onAnyMessage (message: Message): Promise<void> {
     message.body = message.body.toLowerCase()
     const chat = await message.getChat()
+    // Retorna e nao faz nada se for comando para banir do grupo
+    if ((await this.ban(message, chat))) { return }
     // Retorna e nao faz nada se for banido do grupo
     if ((await this.checkForLinkInGroup(message, chat))) { return }
     // Pega o link do grupo
@@ -52,6 +54,24 @@ export class ChatBot {
       return true
     }
     return false
+  }
+
+  async ban (message: Message, chat: Chat): Promise<boolean> {
+    if (chat.isGroup && message.body.toLowerCase().startsWith('#ban') && message.hasQuotedMsg) {
+      const groupChat = chat as GroupChat
+      const contact = await message.getContact()
+      const participant = groupChat.participants.find((value) => value.id._serialized === contact.id._serialized)
+      if (participant.isAdmin) {
+        const quotedMsg = await message.getQuotedMessage()
+        const contactToRemove = await quotedMsg.getContact()
+        await groupChat.removeParticipants([contactToRemove.id._serialized])
+        return true
+      } else {
+        return false
+      }
+    } else {
+      return false
+    }
   }
 
   async getGroupCode (message: Message, chat: Chat): Promise<boolean> {
