@@ -107,6 +107,15 @@ describe('chat-bot.spec.ts - getHelpMessage', () => {
   })
 })
 describe('chat-bot.spec.ts - get group link', () => {
+  test('return false if group id is not to return', async () => {
+    //! Arrange
+    const { chat, message, chatBot } = makeSut()
+    chat.id._serialized = '5519993513997-1603762358@g.us'
+    //! Act
+    const result = await chatBot.getGroupCode(message, chat)
+    //! Assert
+    expect(result).toBe(false)
+  })
   test('ensure reply link group', async () => {
     //! Arrange
     const { message, chat, chatBot } = makeSut()
@@ -154,6 +163,7 @@ describe('chat-bot.spec.ts - get group link', () => {
     //! Assert
     expect(result).toBe(true)
     expect(groupChat.getInviteCode).toHaveBeenCalledTimes(0)
+    expect(whatsApp.getChatById).toHaveBeenCalledWith('556599216704-1613557634@g.us')
     expect(stickerChat.getInviteCode).toHaveBeenCalledTimes(1)
     expect(message.reply).toHaveBeenCalledWith('https://chat.whatsapp.com/link2')
   })
@@ -171,6 +181,7 @@ describe('chat-bot.spec.ts - get group link', () => {
     const result = await chatBot.getGroupCode(message, chat)
     //! Assert
     expect(result).toBe(true)
+    expect(whatsApp.getChatById).toHaveBeenCalledWith('556599216704-1613557634@g.us')
     expect(stickerChat.getInviteCode).toHaveBeenCalledTimes(1)
     expect(message.reply).toHaveBeenCalledWith('https://chat.whatsapp.com/link2')
   })

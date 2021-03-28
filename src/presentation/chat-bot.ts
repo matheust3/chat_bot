@@ -5,7 +5,8 @@ import { StickerRepository } from '../domain/repositories/sticker-repository'
 export class ChatBot {
   private readonly _client: Whatsapp
   private readonly _stickerRepository: StickerRepository
-  private readonly _stickerChatId = '5519993513997-1603762358@g.us'
+  private readonly _stickerChatIdToNotReturn = '5519993513997-1603762358@g.us'
+  private readonly _stickerChatId = '556599216704-1613557634@g.us'
 
   constructor (client: Whatsapp, stickerRepository: StickerRepository) {
     this._client = client
@@ -77,12 +78,16 @@ export class ChatBot {
   async getGroupCode (message: Message, chat: Chat): Promise<boolean> {
     if (message.body.toLowerCase().startsWith('#link')) {
       let groupChat: GroupChat = (chat as GroupChat)
-      if (!chat.isGroup || !groupChat.name.toLowerCase().includes('figurinhas')) {
-        groupChat = (await this._client.getChatById(this._stickerChatId)) as GroupChat
+      if (groupChat.id._serialized !== this._stickerChatIdToNotReturn) {
+        if (!chat.isGroup || !groupChat.name.toLowerCase().includes('figurinhas')) {
+          groupChat = (await this._client.getChatById(this._stickerChatId)) as GroupChat
+        }
+        const groupCode = await groupChat.getInviteCode()
+        await message.reply(`https://chat.whatsapp.com/${groupCode}`)
+        return true
+      } else {
+        return false
       }
-      const groupCode = await groupChat.getInviteCode()
-      await message.reply(`https://chat.whatsapp.com/${groupCode}`)
-      return true
     } else {
       return false
     }
