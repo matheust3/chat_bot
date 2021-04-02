@@ -97,7 +97,7 @@ export class ChatBot {
     if (chat.isGroup && !message.fromMe) {
       const groupChat: GroupChat = (chat as GroupChat)
       if (groupChat.name.toLowerCase().includes('figurinhas')) {
-        if (new RegExp('([a-zA-Z0-9]+://)?([a-zA-Z0-9_]+:[a-zA-Z0-9_]+@)?([a-zA-Z0-9.-]+\\.[A-Za-z]{2,4})(:[0-9]+)?(/.*)?').test(message.body)) {
+        if (message.links.length > 0) {
           await message.reply('Mensagem do Bot: \n🚫 CONTEÚDO MALICIOSO OU FORA DO CONTEXTO DO GRUPO 🚫')
           const contact = await message.getContact()
           await groupChat.removeParticipants([contact.id._serialized])

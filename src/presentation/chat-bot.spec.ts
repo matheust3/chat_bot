@@ -191,7 +191,7 @@ describe('chat-bot.spec.ts - check for links', () => {
     //! Arrange
     const { message, chatBot, chat } = makeSut()
     const groupChat: GroupChat = chat as GroupChat
-    message.body = 'teste de texto com um link http://link.com'
+    message.links = ['link']
     groupChat.isGroup = true
     groupChat.name = 'figurinhas'
     message.fromMe = false
@@ -202,11 +202,11 @@ describe('chat-bot.spec.ts - check for links', () => {
     expect(message.reply).toHaveBeenCalledWith('Mensagem do Bot: \n🚫 CONTEÚDO MALICIOSO OU FORA DO CONTEXTO DO GRUPO 🚫')
     expect(groupChat.removeParticipants).toHaveBeenCalledWith(['any id'])
   })
-  test('ensure jot remove user if message as link and is me', async () => {
+  test('ensure not remove user if message as link and is me', async () => {
     //! Arrange
     const { message, chatBot, chat } = makeSut()
     const groupChat: GroupChat = chat as GroupChat
-    message.body = 'teste de texto com um link http://link.com'
+    message.links = ['link']
     groupChat.isGroup = true
     groupChat.name = 'figurinhas'
     message.fromMe = true
