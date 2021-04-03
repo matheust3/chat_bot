@@ -7,6 +7,16 @@ export class ChatBot {
   private readonly _stickerRepository: StickerRepository
   private readonly _stickerChatIdToNotReturn = '5519993513997-1603762358@g.us'
   private readonly _stickerChatId = '556599216704-1613557634@g.us'
+  private readonly _scrappingChatIds =
+  [
+    '556992913988-1617301924@g.us',
+    '558386612936-1521909777@g.us',
+    '559293662908-1616514991@g.us',
+    '5513997431156-1617392350@g.us',
+    '12793459421-1615393955@g.us',
+    '554192247460-1594859139@g.us',
+    '5514997926527-1566178379@g.us'
+  ]
 
   constructor (client: Whatsapp, stickerRepository: StickerRepository) {
     this._client = client
@@ -17,6 +27,10 @@ export class ChatBot {
   async onAnyMessage (message: Message): Promise<void> {
     message.body = message.body.toLowerCase()
     const chat = await message.getChat()
+    // Apaga as mensagens que nao sao media nos chats de scrapping
+    if ((await this.cleanScrappingChats(message, chat))) { return }
+    // Pega o id do chat
+    if ((await this.getChatId(message, chat))) { return }
     // Retorna e nao faz nada se for comando para banir do grupo
     if ((await this.ban(message, chat))) { return }
     // Retorna e nao faz nada se for banido do grupo
@@ -46,6 +60,22 @@ export class ChatBot {
         }
       }
     }
+  }
+
+  async cleanScrappingChats (message: Message, chat: Chat): Promise<boolean> {
+    if (!message.hasMedia && this._scrappingChatIds.includes(chat.id._serialized)) {
+      await message.delete()
+      return true
+    }
+    return false
+  }
+
+  async getChatId (message: Message, chat: Chat): Promise<boolean> {
+    if (message.fromMe && message.body.toLowerCase().startsWith('#cid')) {
+      await message.reply(chat.id._serialized)
+      return true
+    }
+    return false
   }
 
   async getHelpMessage (message: Message, chat: Chat): Promise<boolean> {

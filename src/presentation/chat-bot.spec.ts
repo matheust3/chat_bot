@@ -75,6 +75,83 @@ describe('ChatBot', () => {
   })
 })
 
+describe('chat-bot.spec.ts - cleanScrappingChats', () => {
+  test('ensure return false if message contains media', async () => {
+    //! Arrange
+    const { message, chat, chatBot } = makeSut()
+    message.hasMedia = true
+    //! Act
+    const result = await chatBot.cleanScrappingChats(message, chat)
+    //! Assert
+    expect(result).toBe(false)
+  })
+  test('ensure return false if message not contains media but not is scrapping chat', async () => {
+    //! Arrange
+    const { message, chat, chatBot } = makeSut()
+    message.hasMedia = true
+    chat.id._serialized = 'any chat id'
+    //! Act
+    const result = await chatBot.cleanScrappingChats(message, chat)
+    //! Assert
+    expect(result).toBe(false)
+  })
+
+  test('ensure return true and delete message if not ha media and if a scrapping chat', async () => {
+    //! Arrange
+    const { message, chat, chatBot } = makeSut()
+    message.hasMedia = false
+    chat.id._serialized = '556992913988-1617301924@g.us'
+    //! Act
+    const result = await chatBot.cleanScrappingChats(message, chat)
+    //! Assert
+    expect(result).toBe(true)
+    expect(message.delete).toHaveBeenCalledTimes(1)
+  })
+  test('ensure call function', async () => {
+    //! Arrange
+    const { message, chat, chatBot } = makeSut()
+    message.hasMedia = false
+    message.body = 'any message'
+    chat.id._serialized = '556992913988-1617301924@g.us'
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(message.delete).toHaveBeenCalledTimes(1)
+  })
+})
+describe('chat-bot.spec.ts - getChatId', () => {
+  test('ensure return false if message is not from me', async () => {
+    //! Arrange
+    const { message, chatBot, chat } = makeSut()
+    message.body = '#cid'
+    message.fromMe = false
+    //! Act
+    const result = await chatBot.getChatId(message, chat)
+    //! Assert
+    expect(result).toBe(false)
+  })
+  test('ensure get chat id and return true', async () => {
+    //! Arrange
+    const { message, chat, chatBot } = makeSut()
+    message.body = '#cid'
+    chat.id._serialized = 'chatId'
+    //! Act
+    const result = await chatBot.getChatId(message, chat)
+    //! Assert
+    expect(result).toBe(true)
+    expect(message.reply).toHaveBeenCalledWith('chatId')
+  })
+  test('ensure call function', async () => {
+    //! Arrange
+    const { chatBot, message, chat } = makeSut()
+    message.body = '#cid'
+    chat.id._serialized = 'chatId'
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(message.reply).lastCalledWith('chatId')
+  })
+})
 describe('chat-bot.spec.ts - getHelpMessage', () => {
   test('ensure return help message if #ajuda', async () => {
     //! Arrange
