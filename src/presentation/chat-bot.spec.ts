@@ -324,11 +324,15 @@ describe('ChatBot -- #sticker', () => {
     chat.isGroup = false
     contact.isMyContact = false
     responseMessage.fromMe = false
+    const stickerChat = mock<GroupChat>()
+    whatsApp.getChatById.mockResolvedValue(stickerChat)
+    stickerChat.getInviteCode.mockResolvedValue('inviteCode')
     //! Act
     await chatBot.onAnyMessage(responseMessage)
     //! Assert
     expect(stickerRepository.createSticker).toHaveBeenCalledTimes(0)
-    expect(whatsApp.sendMessage).toHaveBeenCalledWith(chat.id._serialized, '=> Esta é uma mensagem do bot <=\n\nMeu criador só autoriza seus contatos a fazerem figurinhas no privado, mas você ainda pode me usar nos grupos em que meu criador participa\n\nAqui esta um desses grupos:\nhttps://chat.whatsapp.com/BSs7Gj45KcUA014nWw8bBb')
+    expect(whatsApp.getChatById).toHaveBeenCalledWith('556599216704-1613557634@g.us')
+    expect(whatsApp.sendMessage).toHaveBeenCalledWith(chat.id._serialized, '=> Esta é uma mensagem do bot <=\n\nMeu criador só autoriza seus contatos a fazerem figurinhas no privado, mas você ainda pode me usar nos grupos em que meu criador participa\n\nAqui esta um desses grupos:\nhttps://chat.whatsapp.com/inviteCode')
   })
   test('ensure not call sticker repository to create a sticker and send a message if body is #sticker and quotedMsgObj != null but quotedMsg not has a media', async () => {
     //! Arrange

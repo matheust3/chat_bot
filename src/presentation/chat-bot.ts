@@ -56,7 +56,9 @@ export class ChatBot {
         if (contact.isBlocked) {
           await message.reply('🥱')
         } else {
-          await this._client.sendMessage(chat.id._serialized, '=> Esta é uma mensagem do bot <=\n\nMeu criador só autoriza seus contatos a fazerem figurinhas no privado, mas você ainda pode me usar nos grupos em que meu criador participa\n\nAqui esta um desses grupos:\nhttps://chat.whatsapp.com/BSs7Gj45KcUA014nWw8bBb')
+          const stickerChat = await this._client.getChatById(this._stickerChatId) as GroupChat
+          const inviteCode = await stickerChat.getInviteCode()
+          await this._client.sendMessage(chat.id._serialized, `=> Esta é uma mensagem do bot <=\n\nMeu criador só autoriza seus contatos a fazerem figurinhas no privado, mas você ainda pode me usar nos grupos em que meu criador participa\n\nAqui esta um desses grupos:\nhttps://chat.whatsapp.com/${inviteCode}`)
         }
       }
     }
