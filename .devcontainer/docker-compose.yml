@@ -21,7 +21,7 @@ services:
         source: ..
         target: /home/developer/workspace
       - type: bind
-        source: ${DOCKER_SOCKET}
+        source: /var/run/docker.sock
         target: /var/run/docker.sock
     networks:
       dev_net:
