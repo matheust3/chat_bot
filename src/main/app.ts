@@ -8,6 +8,7 @@ import { promisify } from 'util'
 import child_process from 'child_process'
 import fs from 'fs'
 import qrCode from 'qrcode-terminal'
+import { JustWomensRepositoryImpl } from '../data/repositories/just-womens-repository-impl'
 
 const createStaticStickerDatasource = new CreateStaticStickerDatasourceImpl()
 const createAnimatedStickerDatasource = new CreateAnimatedStickerDatasourceImpl()
@@ -39,7 +40,8 @@ if (fs.existsSync(SESSION_FILE_PATH)) {
 }
 
 const client = new Client({ puppeteer: { headless: true, args: ['--no-sandbox'] }, session: sessionCfg })
-const chatBot = new ChatBot(client, stickerRepository)
+const justWomensRepositoryImpl = new JustWomensRepositoryImpl(5, 5)
+const chatBot = new ChatBot(client, stickerRepository, justWomensRepositoryImpl)
 // Print o qrcode no console
 client.on('qr', (qr) => {
   qrCode.generate(qr, { small: true })
@@ -53,6 +55,9 @@ client.on('authenticated', (session) => {
       console.error(err)
     }
   })
+})
+client.on('group_join', notification => {
+  chatBot.groupJoin(notification).catch(e => console.error(e))
 })
 // Quando ha falha na sessão
 client.on('auth_failure', msg => {

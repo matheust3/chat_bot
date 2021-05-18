@@ -1,7 +1,8 @@
 import { mock, MockProxy } from 'jest-mock-extended'
-import { Chat, Client as Whatsapp, Contact, GroupChat, Message, MessageMedia } from 'whatsapp-web.js'
+import { Chat, Client as Whatsapp, Contact, GroupChat, GroupNotification, Message, MessageMedia } from 'whatsapp-web.js'
 import { StickerRepository } from '../domain/repositories/sticker-repository'
 import { ChatBot } from './chat-bot'
+import { JustWomensRepository } from '../domain/repositories/just-womens-repository'
 
 interface SutTypes{
   whatsApp: MockProxy<Whatsapp> & Whatsapp
@@ -13,6 +14,8 @@ interface SutTypes{
   stickerRepository: MockProxy<StickerRepository> & StickerRepository
   chat: Chat
   contact: Contact
+  groupNotification: MockProxy<GroupNotification> & GroupNotification
+  justWomensRepository: MockProxy<JustWomensRepository> & JustWomensRepository
 }
 
 const makeSut = (): SutTypes => {
@@ -31,6 +34,8 @@ const makeSut = (): SutTypes => {
   const contact: Contact = mock<Contact>()
   contact.isBlocked = false
   contact.id._serialized = 'any id'
+  const groupNotification = mock<GroupNotification>()
+  const justWomensRepository = mock<JustWomensRepository>()
 
   const mediaMessage: MessageMedia = {
     data: fileBuffer.toString('base64'),
@@ -48,7 +53,7 @@ const makeSut = (): SutTypes => {
   jest.spyOn(responseMessage, 'getChat').mockReturnValue(new Promise(resolve => resolve(chat)))
   jest.spyOn(responseMessage, 'getContact').mockReturnValue(new Promise(resolve => resolve(contact)))
 
-  const chatBot = new ChatBot(whatsApp, stickerRepository)
+  const chatBot = new ChatBot(whatsApp, stickerRepository, justWomensRepository)
 
   return {
     whatsApp,
@@ -59,9 +64,38 @@ const makeSut = (): SutTypes => {
     mediaMessage,
     chatBot,
     fileBuffer,
-    contact
+    contact,
+    groupNotification,
+    justWomensRepository
   }
 }
+
+describe('chat-bot.spec.ts - groupJoin', () => {
+  test('ensure call justWomensRepository if new user join in the justWomens group', async () => {
+    //! Arrange
+    const { chatBot, groupNotification, whatsApp, chat, justWomensRepository, contact } = makeSut()
+    chat.id._serialized = '556599216704-1621253858@g.us'
+    whatsApp.getChatById.mockResolvedValue(chat)
+    whatsApp.getContactById.mockResolvedValue(contact)
+    groupNotification.id = { remote: 'groupId' }
+    //! Act
+    await chatBot.groupJoin(groupNotification)
+    //! Assert
+    expect(justWomensRepository.onEnjoy).toHaveBeenCalledWith(contact, chat as GroupChat)
+  })
+  test('ensure not call repositories if chat id is not for the repository', async () => {
+    //! Arrange
+    const { chatBot, groupNotification, whatsApp, chat, justWomensRepository, contact } = makeSut()
+    chat.id._serialized = 'invalidId'
+    whatsApp.getChatById.mockResolvedValue(chat)
+    whatsApp.getContactById.mockResolvedValue(contact)
+    groupNotification.id = { remote: 'groupId' }
+    //! Act
+    await chatBot.groupJoin(groupNotification)
+    //! Assert
+    expect(justWomensRepository.onEnjoy).toHaveBeenCalledTimes(0)
+  })
+})
 
 describe('ChatBot', () => {
   test('ensure remove case sensitive from body', async () => {

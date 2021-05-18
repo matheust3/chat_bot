@@ -1,12 +1,14 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-import { Chat, GroupChat, Client as Whatsapp, Message, MessageMedia } from 'whatsapp-web.js'
+import { Chat, GroupChat, Client as Whatsapp, Message, MessageMedia, GroupNotification } from 'whatsapp-web.js'
 import { Sticker } from '../domain/models/sticker'
+import { JustWomensRepository } from '../domain/repositories/just-womens-repository'
 import { StickerRepository } from '../domain/repositories/sticker-repository'
 export class ChatBot {
   private readonly _client: Whatsapp
   private readonly _stickerRepository: StickerRepository
   private readonly _stickerChatIdToNotReturn = '5519993513997-1603762358@g.us'
   private readonly _stickerChatId = '556599216704-1613557634@g.us'
+  private readonly _justWomensChatId = '556599216704-1621253858@g.us'
   private readonly _scrappingChatIds =
   [
     '556992913988-1617301924@g.us',
@@ -18,9 +20,12 @@ export class ChatBot {
     '5514997926527-1566178379@g.us'
   ]
 
-  constructor (client: Whatsapp, stickerRepository: StickerRepository) {
+  private readonly _justWomensRepository: JustWomensRepository
+
+  constructor (client: Whatsapp, stickerRepository: StickerRepository, justWomensRepository: JustWomensRepository) {
     this._client = client
     this._stickerRepository = stickerRepository
+    this._justWomensRepository = justWomensRepository
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -61,6 +66,17 @@ export class ChatBot {
           await this._client.sendMessage(chat.id._serialized, `=> Esta é uma mensagem do bot <=\n\nMeu criador só autoriza seus contatos a fazerem figurinhas no privado, mas você ainda pode me usar nos grupos em que meu criador participa\n\nAqui esta um desses grupos:\nhttps://chat.whatsapp.com/${inviteCode}`)
         }
       }
+    }
+    if (chat.id._serialized === this._justWomensChatId) {
+      await this._justWomensRepository.onMessage(message, chat as GroupChat)
+    }
+  }
+
+  async groupJoin (notification: GroupNotification): Promise<void> {
+    const chat = await this._client.getChatById((notification.id as {remote: string}).remote)
+    if (chat.id._serialized === this._justWomensChatId) {
+      const contact = await this._client.getContactById(notification.recipientIds[0])
+      await this._justWomensRepository.onEnjoy(contact, chat as GroupChat)
     }
   }
 
