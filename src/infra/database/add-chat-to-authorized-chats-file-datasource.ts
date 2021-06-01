@@ -9,8 +9,12 @@ export class AddChatToAuthorizedChatsFileDatasource implements AddChatToAuthoriz
     } else {
       if (fs.existsSync(`${__dirname}/../../../database-files/authorized-chats.json`)) {
         const data: string[] = JSON.parse(fs.readFileSync(`${__dirname}/../../../database-files/authorized-chats.json`, { encoding: 'utf-8' }))
-        data.push(chatId)
-        fs.writeFileSync(`${__dirname}/../../../database-files/authorized-chats.json`, JSON.stringify(data), { encoding: 'utf-8' })
+        if (!data.includes(chatId)) {
+          data.push(chatId)
+          fs.writeFileSync(`${__dirname}/../../../database-files/authorized-chats.json`, JSON.stringify(data), { encoding: 'utf-8' })
+        } else {
+          throw Error('Has already been authorized')
+        }
       } else {
         fs.writeFileSync(`${__dirname}/../../../database-files/authorized-chats.json`, JSON.stringify([chatId]), { encoding: 'utf-8' })
       }

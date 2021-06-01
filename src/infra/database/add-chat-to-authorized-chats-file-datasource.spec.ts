@@ -65,4 +65,14 @@ describe('add-chat-to-authorized-chats-file-datasource.spec.ts - addChat', () =>
     //! Assert
     await expect(datasource.addChat('chatId')).rejects.toThrow()
   })
+  test('ensure not add chatId again if exits if file', async () => {
+    //! Arrange
+    const { datasource } = makeSut()
+    mockFsReadFileSync.mockReturnValue(JSON.stringify(['chat1', 'chat2', 'chat3']))
+    mockFsExistsSync.mockReturnValue(true)
+    //! Act
+    //! Assert
+    await expect(datasource.addChat('chat2')).rejects.toThrowError(Error('Has already been authorized'))
+    expect(mockFsWriteFileSync).toHaveBeenCalledTimes(0)
+  })
 })
