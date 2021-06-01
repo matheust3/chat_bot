@@ -1,75 +1,82 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { Chat, GroupChat, Client as Whatsapp, Message, MessageMedia } from 'whatsapp-web.js'
 import { Sticker } from '../domain/models/sticker'
+import { ChatRepository } from '../domain/repositories/chat-repository'
+import { DatabaseRepository } from '../domain/repositories/database-repository'
 import { StickerRepository } from '../domain/repositories/sticker-repository'
 export class ChatBot {
   private readonly _client: Whatsapp
   private readonly _stickerRepository: StickerRepository
+  private readonly _databaseRepository: DatabaseRepository
+  private readonly _chatRepository: ChatRepository
   private readonly _stickerChatIdToNotReturn = '5519993513997-1603762358@g.us'
   private readonly _stickerChatId = '556599216704-1613557634@g.us'
-  private readonly _scrappingChatIds =
-  [
-    '556992913988-1617301924@g.us',
-    '558386612936-1521909777@g.us',
-    '559293662908-1616514991@g.us',
-    '5513997431156-1617392350@g.us',
-    '12793459421-1615393955@g.us',
-    '554192247460-1594859139@g.us',
-    '5514997926527-1566178379@g.us'
-  ]
 
-  constructor (client: Whatsapp, stickerRepository: StickerRepository) {
+  constructor (client: Whatsapp, stickerRepository: StickerRepository,
+    databaseRepository: DatabaseRepository,
+    chatRepository: ChatRepository) {
     this._client = client
     this._stickerRepository = stickerRepository
+    this._databaseRepository = databaseRepository
+    this._chatRepository = chatRepository
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async onAnyMessage (message: Message): Promise<void> {
-    message.body = message.body.toLowerCase()
     const chat = await message.getChat()
-    // Apaga as mensagens que nao sao media nos chats de scrapping
-    if ((await this.cleanScrappingChats(message, chat))) { return }
-    // Pega o id do chat
-    if ((await this.getChatId(message, chat))) { return }
-    // Retorna e nao faz nada se for comando para banir do grupo
-    if ((await this.ban(message, chat))) { return }
-    // Retorna e nao faz nada se for banido do grupo
-    if ((await this.checkForLinkInGroup(message, chat))) { return }
-    // Pega o link do grupo
-    if ((await this.getGroupCode(message, chat))) { return }
-    // Pega a mensagem de ajuda
-    if ((await this.getHelpMessage(message, chat))) { return }
-    if ((message.hasMedia && message.body === '#sticker') || (message.body !== undefined && message.body === '#sticker' && message.hasQuotedMsg)) {
-      const contact = await message.getContact()
-      if ((chat.isGroup || message.fromMe || contact.isMyContact) && (!contact.isBlocked)) {
-        if (message.body === '#sticker' && message.hasQuotedMsg) {
-          const quotedMsg = await message.getQuotedMessage()
-          if (quotedMsg.hasMedia) {
-            await this.createSticker(message, true, chat)
-          } else {
-            await quotedMsg.reply('😔 Eu não consigo fazer uma figurinha disso 😔')
+    const contact = await message.getContact()
+    // Verifica se o chat eh autorizado
+    const authorized = await this._databaseRepository.isChatAuthorized(chat.id._serialized)
+    if (authorized || message.fromMe || contact.isMyContact) {
+      switch (message.body) {
+        case '#chatId':
+          await this._chatRepository.getChatId(message)
+          break
+        case '#addChatToAuthorizedChats':
+          if (message.fromMe) {
+            try {
+              await this._databaseRepository.addChatToAuthorizedChats(chat.id._serialized)
+              await message.reply('Bot message:\r\nOk!')
+            } catch (e) {
+              await message.reply(`Bot message:\r\n  Fails:\r\n${e.message as string}`)
+            }
           }
-        } else {
-          await this.createSticker(message, false, chat)
-        }
-      } else {
-        if (contact.isBlocked) {
-          await message.reply('🥱')
-        } else {
-          const stickerChat = await this._client.getChatById(this._stickerChatId) as GroupChat
-          const inviteCode = await stickerChat.getInviteCode()
-          await this._client.sendMessage(chat.id._serialized, `=> Esta é uma mensagem do bot <=\n\nMeu criador só autoriza seus contatos a fazerem figurinhas no privado, mas você ainda pode me usar nos grupos em que meu criador participa\n\nAqui esta um desses grupos:\nhttps://chat.whatsapp.com/${inviteCode}`)
-        }
+          break
+        default:
+          // Retorna e nao faz nada se for comando para banir do grupo
+          if ((await this.ban(message, chat))) { return }
+          // Retorna e nao faz nada se for banido do grupo
+          if ((await this.checkForLinkInGroup(message, chat))) { return }
+          // Pega o link do grupo
+          if ((await this.getGroupCode(message, chat))) { return }
+          // Pega a mensagem de ajuda
+          if ((await this.getHelpMessage(message, chat))) { return }
+          if ((message.hasMedia && message.body === '#sticker') || (message.body !== undefined && message.body === '#sticker' && message.hasQuotedMsg)) {
+            const contact = await message.getContact()
+            if ((chat.isGroup || message.fromMe || contact.isMyContact) && (!contact.isBlocked)) {
+              if (message.body === '#sticker' && message.hasQuotedMsg) {
+                const quotedMsg = await message.getQuotedMessage()
+                if (quotedMsg.hasMedia) {
+                  await this.createSticker(message, true, chat)
+                } else {
+                  await quotedMsg.reply('😔 Eu não consigo fazer uma figurinha disso 😔')
+                }
+              } else {
+                await this.createSticker(message, false, chat)
+              }
+            } else {
+              if (contact.isBlocked) {
+                await message.reply('🥱')
+              } else {
+                const stickerChat = await this._client.getChatById(this._stickerChatId) as GroupChat
+                const inviteCode = await stickerChat.getInviteCode()
+                await this._client.sendMessage(chat.id._serialized, `=> Esta é uma mensagem do bot <=\n\nMeu criador só autoriza seus contatos a fazerem figurinhas no privado, mas você ainda pode me usar nos grupos em que meu criador participa\n\nAqui esta um desses grupos:\nhttps://chat.whatsapp.com/${inviteCode}`)
+              }
+            }
+          }
+          break
       }
     }
-  }
-
-  async cleanScrappingChats (message: Message, chat: Chat): Promise<boolean> {
-    if (!message.hasMedia && this._scrappingChatIds.includes(chat.id._serialized)) {
-      await message.delete()
-      return true
-    }
-    return false
   }
 
   async getChatId (message: Message, chat: Chat): Promise<boolean> {

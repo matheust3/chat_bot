@@ -1,5 +1,7 @@
 import { mock, MockProxy } from 'jest-mock-extended'
 import { Chat, Client as Whatsapp, Contact, GroupChat, Message, MessageMedia } from 'whatsapp-web.js'
+import { ChatRepository } from '../domain/repositories/chat-repository'
+import { DatabaseRepository } from '../domain/repositories/database-repository'
 import { StickerRepository } from '../domain/repositories/sticker-repository'
 import { ChatBot } from './chat-bot'
 
@@ -9,8 +11,10 @@ interface SutTypes{
   message: MockProxy<Message> & Message
   mediaMessage: MessageMedia
   responseMessage: MockProxy<Message> & Message
+  databaseRepository: MockProxy<DatabaseRepository> & DatabaseRepository
   fileBuffer: Buffer
   stickerRepository: MockProxy<StickerRepository> & StickerRepository
+  chatRepository: MockProxy<ChatRepository> & ChatRepository
   chat: Chat
   contact: Contact
 }
@@ -19,6 +23,8 @@ const makeSut = (): SutTypes => {
   const stickerRepository = mock<StickerRepository>()
   const whatsApp = mock<Whatsapp>()
   const message = mock<Message>()
+  const databaseRepository = mock<DatabaseRepository>()
+  const chatRepository = mock<ChatRepository>()
   message.body = '#sticker'
   message.hasQuotedMsg = false
   const responseMessage = mock<Message>()
@@ -47,8 +53,10 @@ const makeSut = (): SutTypes => {
   jest.spyOn(responseMessage, 'getQuotedMessage').mockReturnValue(new Promise(resolve => resolve(message)))
   jest.spyOn(responseMessage, 'getChat').mockReturnValue(new Promise(resolve => resolve(chat)))
   jest.spyOn(responseMessage, 'getContact').mockReturnValue(new Promise(resolve => resolve(contact)))
+  databaseRepository.isChatAuthorized.mockResolvedValue(true)
+  chatRepository.getChatId.mockResolvedValue('chatId')
 
-  const chatBot = new ChatBot(whatsApp, stickerRepository)
+  const chatBot = new ChatBot(whatsApp, stickerRepository, databaseRepository, chatRepository)
 
   return {
     whatsApp,
@@ -59,99 +67,113 @@ const makeSut = (): SutTypes => {
     mediaMessage,
     chatBot,
     fileBuffer,
-    contact
+    contact,
+    databaseRepository,
+    chatRepository
   }
 }
 
 describe('ChatBot', () => {
-  test('ensure remove case sensitive from body', async () => {
+  test('ensure not call chat repository if is not authorized, not is my contact and not is me', async () => {
     //! Arrange
-    const { message, stickerRepository, chatBot, fileBuffer } = makeSut()
-    message.body = '#sTicKer'
-    //! Act
-    await chatBot.onAnyMessage(message)
-    //! Assert
-    expect(stickerRepository.createSticker).toHaveBeenCalledWith(fileBuffer.toString('base64'))
-  })
-})
-
-describe('chat-bot.spec.ts - cleanScrappingChats', () => {
-  test('ensure return false if message contains media', async () => {
-    //! Arrange
-    const { message, chat, chatBot } = makeSut()
-    message.hasMedia = true
-    //! Act
-    const result = await chatBot.cleanScrappingChats(message, chat)
-    //! Assert
-    expect(result).toBe(false)
-  })
-  test('ensure return false if message not contains media but not is scrapping chat', async () => {
-    //! Arrange
-    const { message, chat, chatBot } = makeSut()
-    message.hasMedia = true
-    chat.id._serialized = 'any chat id'
-    //! Act
-    const result = await chatBot.cleanScrappingChats(message, chat)
-    //! Assert
-    expect(result).toBe(false)
-  })
-
-  test('ensure return true and delete message if not ha media and if a scrapping chat', async () => {
-    //! Arrange
-    const { message, chat, chatBot } = makeSut()
-    message.hasMedia = false
-    chat.id._serialized = '556992913988-1617301924@g.us'
-    //! Act
-    const result = await chatBot.cleanScrappingChats(message, chat)
-    //! Assert
-    expect(result).toBe(true)
-    expect(message.delete).toHaveBeenCalledTimes(1)
-  })
-  test('ensure call function', async () => {
-    //! Arrange
-    const { message, chat, chatBot } = makeSut()
-    message.hasMedia = false
-    message.body = 'any message'
-    chat.id._serialized = '556992913988-1617301924@g.us'
-    //! Act
-    await chatBot.onAnyMessage(message)
-    //! Assert
-    expect(message.delete).toHaveBeenCalledTimes(1)
-  })
-})
-describe('chat-bot.spec.ts - getChatId', () => {
-  test('ensure return false if message is not from me', async () => {
-    //! Arrange
-    const { message, chatBot, chat } = makeSut()
-    message.body = '#cid'
+    const { message, chatRepository, chatBot, contact, databaseRepository } = makeSut()
+    databaseRepository.isChatAuthorized.mockResolvedValue(false)
+    contact.isMyContact = false
     message.fromMe = false
+    message.body = '#chatId'
     //! Act
-    const result = await chatBot.getChatId(message, chat)
+    await chatBot.onAnyMessage(message)
     //! Assert
-    expect(result).toBe(false)
+    expect(chatRepository.getChatId).toHaveBeenCalledTimes(0)
   })
-  test('ensure get chat id and return true', async () => {
+  test('ensure call chat repository if is authorized, not is my contact and not is me', async () => {
     //! Arrange
-    const { message, chat, chatBot } = makeSut()
-    message.body = '#cid'
-    chat.id._serialized = 'chatId'
+    const { message, chatRepository, chatBot, contact, databaseRepository } = makeSut()
+    databaseRepository.isChatAuthorized.mockResolvedValue(true)
+    contact.isMyContact = false
+    message.fromMe = false
+    message.body = '#chatId'
     //! Act
-    const result = await chatBot.getChatId(message, chat)
+    await chatBot.onAnyMessage(message)
     //! Assert
-    expect(result).toBe(true)
-    expect(message.reply).toHaveBeenCalledWith('chatId')
+    expect(chatRepository.getChatId).toHaveBeenCalledTimes(1)
   })
-  test('ensure call function', async () => {
+  test('ensure call chat repository if is not authorized but not is my contact and not is me', async () => {
     //! Arrange
-    const { chatBot, message, chat } = makeSut()
-    message.body = '#cid'
+    const { message, chatRepository, chatBot, contact, databaseRepository } = makeSut()
+    databaseRepository.isChatAuthorized.mockResolvedValue(false)
+    contact.isMyContact = true
+    message.fromMe = false
+    message.body = '#chatId'
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(chatRepository.getChatId).toHaveBeenCalledTimes(1)
+  })
+  test('ensure call chat repository if is not authorized, not is my contact but not is me', async () => {
+    //! Arrange
+    const { message, chatRepository, chatBot, contact, databaseRepository } = makeSut()
+    databaseRepository.isChatAuthorized.mockResolvedValue(false)
+    contact.isMyContact = false
+    message.fromMe = true
+    message.body = '#chatId'
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(chatRepository.getChatId).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('chat-bot.spec.ts - addChatToAuthorizedChats', () => {
+  test('ensure call database repository if message is from me', async () => {
+    //! Arrange
+    const { message, chat, chatBot, databaseRepository } = makeSut()
+    message.fromMe = true
+    chat.id._serialized = 'chat id'
+    message.body = '#addChatToAuthorizedChats'
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(databaseRepository.addChatToAuthorizedChats).toHaveBeenCalledWith('chat id')
+    expect(message.reply).toHaveBeenCalledWith('Bot message:\r\nOk!')
+  })
+  test('ensure return message if fails to add chat id to authorized list', async () => {
+    //! Arrange
+    const { message, chat, chatBot, databaseRepository } = makeSut()
+    databaseRepository.addChatToAuthorizedChats.mockRejectedValue(Error('any error test'))
+    message.fromMe = true
+    chat.id._serialized = 'chat id'
+    message.body = '#addChatToAuthorizedChats'
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(message.reply).toHaveBeenCalledWith('Bot message:\r\n  Fails:\r\nany error test')
+  })
+  test('ensure NOT call database repository if message is NOT from me', async () => {
+    //! Arrange
+    const { message, chat, chatBot, databaseRepository } = makeSut()
+    message.fromMe = false
+    chat.id._serialized = 'chat id'
+    message.body = '#addChatToAuthorizedChats'
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(databaseRepository.addChatToAuthorizedChats).toHaveBeenCalledTimes(0)
+  })
+})
+
+describe('chat-bot.spec.ts - onAnyMessage', () => {
+  test('ensure check if chat is authorized', async () => {
+    //! Arrange
+    const { chatBot, message, databaseRepository, chat } = makeSut()
     chat.id._serialized = 'chatId'
     //! Act
     await chatBot.onAnyMessage(message)
     //! Assert
-    expect(message.reply).lastCalledWith('chatId')
+    expect(databaseRepository.isChatAuthorized).toHaveBeenCalledWith('chatId')
   })
 })
+
 describe('chat-bot.spec.ts - getHelpMessage', () => {
   test('ensure return help message if #ajuda', async () => {
     //! Arrange
