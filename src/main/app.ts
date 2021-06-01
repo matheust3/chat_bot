@@ -8,6 +8,7 @@ import { promisify } from 'util'
 import child_process from 'child_process'
 import fs from 'fs'
 import qrCode from 'qrcode-terminal'
+import { ChatRepositoryImpl } from '../data/repositories/chat-repository-impl'
 
 const createStaticStickerDatasource = new CreateStaticStickerDatasourceImpl()
 const createAnimatedStickerDatasource = new CreateAnimatedStickerDatasourceImpl()
@@ -37,9 +38,11 @@ let sessionCfg
 if (fs.existsSync(SESSION_FILE_PATH)) {
   sessionCfg = JSON.parse(fs.readFileSync(SESSION_FILE_PATH).toString('ascii'))
 }
-
+//! datasources
+//! repositories
+const chatRepository = new ChatRepositoryImpl()
 const client = new Client({ puppeteer: { headless: true, args: ['--no-sandbox'] }, session: sessionCfg })
-const chatBot = new ChatBot(client, stickerRepository)
+const chatBot = new ChatBot(client, stickerRepository, chatRepository)
 // Print o qrcode no console
 client.on('qr', (qr) => {
   qrCode.generate(qr, { small: true })
