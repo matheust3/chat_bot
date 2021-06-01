@@ -42,6 +42,14 @@ export class ChatBot {
             }
           }
           break
+        case '#ajuda':
+        case '#help' :
+          if (message.fromMe) {
+            await message.reply('Bot message:\n🤡 O Matheus esqueceu como chamar as funções que ele mesmo programou...\n\n#addChatToAuthorizedChats - Autoriza um chat a usar o bot')
+          } else {
+            await message.reply('Bot message:\nAJUDA:\n\n#ajuda -> Esta mensagem de ajuda\n#help -> Esta mensagem de ajuda\n#link -> Link do grupo (de figurinhas)\n\nPARA FAZER FIGURINHAS\n\nColocar #sticker na legenda de uma mídia ou responder uma mídia com #sticker')
+          }
+          break
         default:
           // Retorna e nao faz nada se for comando para banir do grupo
           if ((await this.ban(message, chat))) { return }
@@ -49,8 +57,6 @@ export class ChatBot {
           if ((await this.checkForLinkInGroup(message, chat))) { return }
           // Pega o link do grupo
           if ((await this.getGroupCode(message, chat))) { return }
-          // Pega a mensagem de ajuda
-          if ((await this.getHelpMessage(message, chat))) { return }
           if ((message.hasMedia && message.body === '#sticker') || (message.body !== undefined && message.body === '#sticker' && message.hasQuotedMsg)) {
             const contact = await message.getContact()
             if ((chat.isGroup || message.fromMe || contact.isMyContact) && (!contact.isBlocked)) {
@@ -82,15 +88,6 @@ export class ChatBot {
   async getChatId (message: Message, chat: Chat): Promise<boolean> {
     if (message.fromMe && message.body.toLowerCase().startsWith('#cid')) {
       await message.reply(chat.id._serialized)
-      return true
-    }
-    return false
-  }
-
-  async getHelpMessage (message: Message, chat: Chat): Promise<boolean> {
-    if (message.body.toLowerCase().startsWith('#help') ||
-    message.body.toLowerCase().startsWith('#ajuda')) {
-      await message.reply('AJUDA:\n\n#ajuda -> Esta mensagem de ajuda\n#help -> Esta mensagem de ajuda\n#link -> Link do grupo (de figurinhas)\n\nPARA FAZER FIGURINHAS\n\nColocar #sticker na legenda de uma mídia ou responder uma mídia com #sticker')
       return true
     }
     return false

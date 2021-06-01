@@ -124,6 +124,44 @@ describe('ChatBot', () => {
   })
 })
 
+describe('chat-bot.spec.ts - help/ajuda', () => {
+  test('ensure send help message for user if help', async () => {
+    //! Arrange
+    const { message, chatBot } = makeSut()
+    message.body = '#help'
+    message.fromMe = false
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(message.reply).toHaveBeenCalledWith(
+      'Bot message:\nAJUDA:\n\n#ajuda -> Esta mensagem de ajuda\n#help -> Esta mensagem de ajuda\n#link -> Link do grupo (de figurinhas)\n\nPARA FAZER FIGURINHAS\n\nColocar #sticker na legenda de uma mídia ou responder uma mídia com #sticker'
+    )
+  })
+  test('ensure send help message for user if ajuda', async () => {
+    //! Arrange
+    const { message, chatBot } = makeSut()
+    message.body = '#ajuda'
+    message.fromMe = false
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(message.reply).toHaveBeenCalledWith(
+      'Bot message:\nAJUDA:\n\n#ajuda -> Esta mensagem de ajuda\n#help -> Esta mensagem de ajuda\n#link -> Link do grupo (de figurinhas)\n\nPARA FAZER FIGURINHAS\n\nColocar #sticker na legenda de uma mídia ou responder uma mídia com #sticker'
+    )
+  })
+  test('ensure return help message to me if is me', async () => {
+    //! Arrange
+    const { message, chatBot } = makeSut()
+    message.body = '#help'
+    message.fromMe = true
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(message.reply).toHaveBeenCalledWith(
+      'Bot message:\n🤡 O Matheus esqueceu como chamar as funções que ele mesmo programou...\n\n#addChatToAuthorizedChats - Autoriza um chat a usar o bot'
+    )
+  })
+})
 describe('chat-bot.spec.ts - addChatToAuthorizedChats', () => {
   test('ensure call database repository if message is from me', async () => {
     //! Arrange
@@ -174,37 +212,6 @@ describe('chat-bot.spec.ts - onAnyMessage', () => {
   })
 })
 
-describe('chat-bot.spec.ts - getHelpMessage', () => {
-  test('ensure return help message if #ajuda', async () => {
-    //! Arrange
-    const { message, chat, chatBot } = makeSut()
-    message.body = '#ajuda'
-    //! Act
-    const result = await chatBot.getHelpMessage(message, chat)
-    //! Assert
-    expect(result).toBe(true)
-  })
-  test('ensure return help message if #help', async () => {
-    //! Arrange
-    const { message, chat, chatBot } = makeSut()
-    message.body = '#help'
-    //! Act
-    const result = await chatBot.getHelpMessage(message, chat)
-    //! Assert
-    expect(result).toBe(true)
-    expect(message.reply).toHaveBeenCalledWith('AJUDA:\n\n#ajuda -> Esta mensagem de ajuda\n#help -> Esta mensagem de ajuda\n#link -> Link do grupo (de figurinhas)\n\nPARA FAZER FIGURINHAS\n\nColocar #sticker na legenda de uma mídia ou responder uma mídia com #sticker')
-  })
-  test('ensure return false if not is #help or #ajuda', async () => {
-    //! Arrange
-    const { message, chat, chatBot } = makeSut()
-    message.body = 'any message'
-    //! Act
-    const result = await chatBot.getHelpMessage(message, chat)
-    //! Assert
-    expect(result).toBe(false)
-    expect(message.reply).toHaveBeenCalledTimes(0)
-  })
-})
 describe('chat-bot.spec.ts - get group link', () => {
   test('return false if group id is not to return', async () => {
     //! Arrange
