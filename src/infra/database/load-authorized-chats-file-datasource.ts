@@ -6,7 +6,7 @@ export class LoadAuthorizedChatsFileDatasource implements LoadAuthorizedChatsDat
     if (!fs.existsSync('../../../database-files/authorized-chats.json')) {
       return []
     } else {
-      return JSON.parse(fs.readFileSync('../../../database-files/authorized-chats.json', { encoding: 'utf-8' }))
+      return JSON.parse(fs.readFileSync(`${__dirname}/../../../database-files/authorized-chats.json`, { encoding: 'utf-8' }))
     }
   }
 }

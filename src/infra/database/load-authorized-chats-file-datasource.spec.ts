@@ -37,6 +37,7 @@ describe('load-authorized-chats-file-datasource.spec.ts - load', () => {
     const result = datasource.load()
     //! Assert
     expect(result).toEqual(['ChatId'])
+    expect(mockFsReadFileSync).toHaveBeenCalledWith(`${__dirname}/../../../database-files/authorized-chats.json`, { encoding: 'utf-8' })
   })
   test('ensure throws if fs throws', async () => {
     //! Arrange
