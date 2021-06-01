@@ -9,6 +9,9 @@ import child_process from 'child_process'
 import fs from 'fs'
 import qrCode from 'qrcode-terminal'
 import { ChatRepositoryImpl } from '../data/repositories/chat-repository-impl'
+import { DatabaseRepositoryImpl } from '../data/repositories/database-repository-impl'
+import { LoadAuthorizedChatsFileDatasource } from '../infra/database/load-authorized-chats-file-datasource'
+import { AddChatToAuthorizedChatsFileDatasource } from '../infra/database/add-chat-to-authorized-chats-file-datasource'
 
 const createStaticStickerDatasource = new CreateStaticStickerDatasourceImpl()
 const createAnimatedStickerDatasource = new CreateAnimatedStickerDatasourceImpl()
@@ -39,10 +42,17 @@ if (fs.existsSync(SESSION_FILE_PATH)) {
   sessionCfg = JSON.parse(fs.readFileSync(SESSION_FILE_PATH).toString('ascii'))
 }
 //! datasources
+const loadAuthorizedChatsFileDatasource = new LoadAuthorizedChatsFileDatasource()
+const addChatToAuthorizedChatsFileDatasource = new AddChatToAuthorizedChatsFileDatasource()
 //! repositories
+const databaseRepository = new DatabaseRepositoryImpl(
+  loadAuthorizedChatsFileDatasource,
+  addChatToAuthorizedChatsFileDatasource
+
+)
 const chatRepository = new ChatRepositoryImpl()
 const client = new Client({ puppeteer: { headless: true, args: ['--no-sandbox'] }, session: sessionCfg })
-const chatBot = new ChatBot(client, stickerRepository, chatRepository)
+const chatBot = new ChatBot(client, stickerRepository, databaseRepository, chatRepository)
 // Print o qrcode no console
 client.on('qr', (qr) => {
   qrCode.generate(qr, { small: true })
