@@ -122,6 +122,17 @@ describe('ChatBot', () => {
     //! Assert
     expect(chatRepository.getChatId).toHaveBeenCalledTimes(1)
   })
+  test('ensure return message if check if is authorized throws', async () => {
+    //! Arrange
+    const { message, databaseRepository, chatBot } = makeSut()
+    databaseRepository.isChatAuthorized.mockRejectedValue(Error('any error test'))
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(message.reply).toHaveBeenCalledWith(
+      'Bot message:\n☠️☠️☠️\n\nany error test'
+    )
+  })
 })
 
 describe('chat-bot.spec.ts - isAuthorized?', () => {

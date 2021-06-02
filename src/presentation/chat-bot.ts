@@ -26,7 +26,12 @@ export class ChatBot {
     const chat = await message.getChat()
     const contact = await message.getContact()
     // Verifica se o chat eh autorizado
-    const authorized = await this._databaseRepository.isChatAuthorized(chat.id._serialized)
+    let authorized: boolean
+    try {
+      authorized = await this._databaseRepository.isChatAuthorized(chat.id._serialized)
+    } catch (e) {
+      await message.reply(`Bot message:\n☠️☠️☠️\n\n${e.message as string}`)
+    }
     if (authorized || message.fromMe || contact.isMyContact) {
       switch (message.body) {
         case '#chatId':
