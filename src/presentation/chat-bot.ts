@@ -32,6 +32,9 @@ export class ChatBot {
         case '#chatId':
           await this._chatRepository.getChatId(message)
           break
+        case '#isAuthorized?':
+          if (message.fromMe) { await message.reply(String(authorized)) }
+          break
         case '#addChatToAuthorizedChats':
           if (message.fromMe) {
             try {
@@ -45,7 +48,7 @@ export class ChatBot {
         case '#ajuda':
         case '#help' :
           if (message.fromMe) {
-            await message.reply('Bot message:\n🤡 O Matheus esqueceu como chamar as funções que ele mesmo programou...\n\n#addChatToAuthorizedChats - Autoriza um chat a usar o bot')
+            await message.reply('Bot message:\n🤡 O Matheus esqueceu como chamar as funções que ele mesmo programou...\n\n#addChatToAuthorizedChats - Autoriza um chat a usar o bot\n#isAuthorized? - Verifica se o chat esta na lista de autorizados')
           } else {
             await message.reply('Bot message:\nAJUDA:\n\n#ajuda -> Esta mensagem de ajuda\n#help -> Esta mensagem de ajuda\n#link -> Link do grupo (de figurinhas)\n\nPARA FAZER FIGURINHAS\n\nColocar #sticker na legenda de uma mídia ou responder uma mídia com #sticker')
           }

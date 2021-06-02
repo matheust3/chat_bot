@@ -124,6 +124,41 @@ describe('ChatBot', () => {
   })
 })
 
+describe('chat-bot.spec.ts - isAuthorized?', () => {
+  test('ensure return true if is authorized', async () => {
+    //! Arrange
+    const { message, chatBot, databaseRepository } = makeSut()
+    message.fromMe = true
+    message.body = '#isAuthorized?'
+    databaseRepository.isChatAuthorized.mockResolvedValue(true)
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(message.reply).toHaveBeenCalledWith('true')
+  })
+  test('ensure return false if is not authorized', async () => {
+    //! Arrange
+    const { message, chatBot, databaseRepository } = makeSut()
+    message.fromMe = true
+    message.body = '#isAuthorized?'
+    databaseRepository.isChatAuthorized.mockResolvedValue(false)
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(message.reply).toHaveBeenCalledWith('false')
+  })
+  test('ensure not return message if is not me', async () => {
+    //! Arrange
+    const { message, chatBot, databaseRepository } = makeSut()
+    message.fromMe = false
+    message.body = '#isAuthorized?'
+    databaseRepository.isChatAuthorized.mockResolvedValue(true)
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(message.reply).toHaveBeenCalledTimes(0)
+  })
+})
 describe('chat-bot.spec.ts - help/ajuda', () => {
   test('ensure send help message for user if help', async () => {
     //! Arrange
@@ -158,7 +193,7 @@ describe('chat-bot.spec.ts - help/ajuda', () => {
     await chatBot.onAnyMessage(message)
     //! Assert
     expect(message.reply).toHaveBeenCalledWith(
-      'Bot message:\n🤡 O Matheus esqueceu como chamar as funções que ele mesmo programou...\n\n#addChatToAuthorizedChats - Autoriza um chat a usar o bot'
+      'Bot message:\n🤡 O Matheus esqueceu como chamar as funções que ele mesmo programou...\n\n#addChatToAuthorizedChats - Autoriza um chat a usar o bot\n#isAuthorized? - Verifica se o chat esta na lista de autorizados'
     )
   })
 })
