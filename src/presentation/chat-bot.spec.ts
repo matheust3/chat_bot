@@ -2,6 +2,7 @@ import { mock, MockProxy } from 'jest-mock-extended'
 import { Chat, Client as Whatsapp, Contact, GroupChat, Message, MessageMedia } from 'whatsapp-web.js'
 import { ChatRepository } from '../domain/repositories/chat-repository'
 import { DatabaseRepository } from '../domain/repositories/database-repository'
+import { GhostRepository } from '../domain/repositories/ghost-repository'
 import { StickerRepository } from '../domain/repositories/sticker-repository'
 import { ChatBot } from './chat-bot'
 
@@ -15,6 +16,7 @@ interface SutTypes{
   fileBuffer: Buffer
   stickerRepository: MockProxy<StickerRepository> & StickerRepository
   chatRepository: MockProxy<ChatRepository> & ChatRepository
+  ghostRepository: MockProxy<GhostRepository> & GhostRepository
   chat: Chat
   contact: Contact
 }
@@ -25,6 +27,8 @@ const makeSut = (): SutTypes => {
   const message = mock<Message>()
   const databaseRepository = mock<DatabaseRepository>()
   const chatRepository = mock<ChatRepository>()
+  const ghostRepository = mock<GhostRepository>()
+
   message.body = '#sticker'
   message.hasQuotedMsg = false
   const responseMessage = mock<Message>()
@@ -56,7 +60,7 @@ const makeSut = (): SutTypes => {
   databaseRepository.isChatAuthorized.mockResolvedValue(true)
   chatRepository.getChatId.mockResolvedValue('chatId')
 
-  const chatBot = new ChatBot(whatsApp, stickerRepository, databaseRepository, chatRepository)
+  const chatBot = new ChatBot(whatsApp, stickerRepository, databaseRepository, chatRepository, ghostRepository)
 
   return {
     whatsApp,
@@ -69,9 +73,30 @@ const makeSut = (): SutTypes => {
     fileBuffer,
     contact,
     databaseRepository,
-    chatRepository
+    chatRepository,
+    ghostRepository
   }
 }
+describe('chat-bot.spec.ts - ghostRepository', () => {
+  test('ensure check if is ghost if is sticker chat', async () => {
+    //! Arrange
+    const { message, chatBot, ghostRepository, chat } = makeSut()
+    chat.id._serialized = '556599216704-1613557634@g.us'
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(ghostRepository.checkGhost).toBeCalledWith(message)
+  })
+  test('ensure not check if is ghost if is not sticker chat', async () => {
+    //! Arrange
+    const { message, chatBot, ghostRepository, chat } = makeSut()
+    chat.id._serialized = 'anyChatId'
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(ghostRepository.checkGhost).toHaveBeenCalledTimes(0)
+  })
+})
 
 describe('ChatBot', () => {
   test('ensure not call chat repository if is not authorized, not is my contact and not is me', async () => {

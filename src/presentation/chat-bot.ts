@@ -3,22 +3,26 @@ import { Chat, GroupChat, Client as Whatsapp, Message, MessageMedia } from 'what
 import { Sticker } from '../domain/models/sticker'
 import { ChatRepository } from '../domain/repositories/chat-repository'
 import { DatabaseRepository } from '../domain/repositories/database-repository'
+import { GhostRepository } from '../domain/repositories/ghost-repository'
 import { StickerRepository } from '../domain/repositories/sticker-repository'
 export class ChatBot {
   private readonly _client: Whatsapp
   private readonly _stickerRepository: StickerRepository
   private readonly _databaseRepository: DatabaseRepository
   private readonly _chatRepository: ChatRepository
+  private readonly _ghostRepository: GhostRepository
   private readonly _stickerChatIdToNotReturn = '5519993513997-1603762358@g.us'
   private readonly _stickerChatId = '556599216704-1613557634@g.us'
 
   constructor (client: Whatsapp, stickerRepository: StickerRepository,
     databaseRepository: DatabaseRepository,
-    chatRepository: ChatRepository) {
+    chatRepository: ChatRepository,
+    ghostRepository: GhostRepository) {
     this._client = client
     this._stickerRepository = stickerRepository
     this._databaseRepository = databaseRepository
     this._chatRepository = chatRepository
+    this._ghostRepository = ghostRepository
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -33,6 +37,9 @@ export class ChatBot {
       await message.reply(`Bot message:\n☠️☠️☠️\n\n${e.message as string}`)
     }
     if (authorized || message.fromMe || contact.isMyContact) {
+      if (chat.id._serialized === this._stickerChatId) {
+        await this._ghostRepository.checkGhost(message)
+      }
       switch (message.body) {
         case '#chatId':
           await this._chatRepository.getChatId(message)
