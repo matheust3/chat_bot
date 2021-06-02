@@ -12,6 +12,9 @@ import { ChatRepositoryImpl } from '../data/repositories/chat-repository-impl'
 import { DatabaseRepositoryImpl } from '../data/repositories/database-repository-impl'
 import { LoadAuthorizedChatsFileDatasource } from '../infra/database/load-authorized-chats-file-datasource'
 import { AddChatToAuthorizedChatsFileDatasource } from '../infra/database/add-chat-to-authorized-chats-file-datasource'
+import { GhostRepositoryImpl } from '../data/repositories/ghost-repository-impl'
+import { SaveGhostDataFileDatasource } from '../infra/save-ghost-data-file-datasource'
+import { LoadGhostDataFileDatasource } from '../infra/load-ghost-data-file-datasource'
 
 const createStaticStickerDatasource = new CreateStaticStickerDatasourceImpl()
 const createAnimatedStickerDatasource = new CreateAnimatedStickerDatasourceImpl()
@@ -42,6 +45,8 @@ if (fs.existsSync(SESSION_FILE_PATH)) {
   sessionCfg = JSON.parse(fs.readFileSync(SESSION_FILE_PATH).toString('ascii'))
 }
 //! datasources
+const saveGhostDataFileDatasource = new SaveGhostDataFileDatasource()
+const loadGhostDataFileDatasource = new LoadGhostDataFileDatasource()
 const loadAuthorizedChatsFileDatasource = new LoadAuthorizedChatsFileDatasource()
 const addChatToAuthorizedChatsFileDatasource = new AddChatToAuthorizedChatsFileDatasource()
 //! repositories
@@ -50,9 +55,10 @@ const databaseRepository = new DatabaseRepositoryImpl(
   addChatToAuthorizedChatsFileDatasource
 
 )
+const ghostRepository = new GhostRepositoryImpl(loadGhostDataFileDatasource, saveGhostDataFileDatasource)
 const chatRepository = new ChatRepositoryImpl()
 const client = new Client({ puppeteer: { headless: true, args: ['--no-sandbox'] }, session: sessionCfg })
-const chatBot = new ChatBot(client, stickerRepository, databaseRepository, chatRepository)
+const chatBot = new ChatBot(client, stickerRepository, databaseRepository, chatRepository, ghostRepository)
 // Print o qrcode no console
 client.on('qr', (qr) => {
   qrCode.generate(qr, { small: true })
