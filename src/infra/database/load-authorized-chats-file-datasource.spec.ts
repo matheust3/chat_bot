@@ -27,6 +27,9 @@ describe('load-authorized-chats-file-datasource.spec.ts - load', () => {
     const result = datasource.load()
     //! Assert
     expect(result).toEqual([])
+    expect(mockFsExistsSync).toHaveBeenCalledWith(
+      `${__dirname}/../../../database-files/authorized-chats.json`
+    )
   })
   test('ensure return chats from file', () => {
     //! Arrange
