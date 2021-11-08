@@ -31,8 +31,13 @@ export class GhostRepositoryImpl implements GhostRepository {
       }
       for (let i = 0; i < ghostData.contacts.length; i++) {
         if (ghostData.contacts[i].lastTimeSeen + 5184000000 < dateNow) {
-          await chat.sendMessage('Bot message:\n\nRemovido por ghost')
-          await chat.removeParticipants([ghostData.contacts[i].id])
+          // Verifica se o participante ainda esta no grupo
+          const c = chat.participants.findIndex((p) => { return p.id._serialized === ghostData.contacts[i].id })
+          // Soh remove se ainda esta no grupo
+          if (c !== -1) {
+            await chat.sendMessage('Bot message:\n\nRemovido por ghost')
+            await chat.removeParticipants([ghostData.contacts[i].id])
+          }
           ghostData.contacts.splice(i, 1)
         }
       }

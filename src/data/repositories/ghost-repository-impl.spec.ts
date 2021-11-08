@@ -1,7 +1,7 @@
 import { GhostRepositoryImpl } from './ghost-repository-impl'
 import { LoadGhostDataDatasource } from '../datasources/load-ghost-data-datasource'
 import { mock, MockProxy } from 'jest-mock-extended'
-import { Contact, GroupChat, Message } from 'whatsapp-web.js'
+import { Contact, GroupChat, Message, GroupParticipant } from 'whatsapp-web.js'
 import { SaveGhostDataDatasource } from '../datasources/save-ghost-data-datasource'
 import { GhostData } from '../../domain/models/ghost-data'
 
@@ -20,12 +20,15 @@ const makeSut = (): SutTypes => {
   const chat = mock<GroupChat>()
   const message = mock<Message>()
   const contact = mock<Contact>()
+  const participant = mock<GroupParticipant>()
+  participant.id._serialized = 'idToRemove'
 
   contact.isMyContact = false
   message.fromMe = false
   contact.id._serialized = 'anyId'
   message.getContact.mockResolvedValue(contact)
   message.getChat.mockResolvedValue(chat)
+  chat.participants = [participant]
 
   loadGhostDataDatasource.load.mockResolvedValue({ contacts: [{ id: 'anyId', lastTimeSeen: 1622600093729 }] })
 
@@ -64,6 +67,28 @@ describe('ghost-repository-impl.spec.ts - checkGhost', () => {
     await repository.checkGhost(message)
     //! Assert
     expect(loadGhostDataDatasource.load).toHaveBeenCalledTimes(0)
+  })
+  test('ensure not remove participant if he is no longer in the group', async () => {
+    //! Arrange
+    const { repository, chat, saveGhostDataDatasource, loadGhostDataDatasource, message } = makeSut()
+    loadGhostDataDatasource.load.mockResolvedValue({ contacts: [{ id: 'idToRemove', lastTimeSeen: 1622600093729 - 5184000000 - 1 }] })
+    Date.now = jest.fn(() => 1622600093799)
+    chat.participants = []
+    //! Act
+    await repository.checkGhost(message)
+    //! Assert
+    expect(chat.sendMessage).toHaveBeenCalledTimes(0)
+    expect(chat.removeParticipants).toHaveBeenCalledTimes(0)
+    expect(saveGhostDataDatasource.save).toHaveBeenCalledWith(
+      {
+        contacts: [
+          {
+            id: 'anyId',
+            lastTimeSeen: 1622600093799
+          }
+        ]
+      } as GhostData
+    )
   })
   test('ensure remove another user if is ghost', async () => {
     //! Arrange

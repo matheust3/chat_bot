@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { Chat, GroupChat, Client as Whatsapp, Message, MessageMedia } from 'whatsapp-web.js'
 import { Sticker } from '../domain/models/sticker'
+import { AntiSpamRepository } from '../domain/repositories/anti-spam-repository'
+import { BanRepository } from '../domain/repositories/ban-repository'
 import { ChatRepository } from '../domain/repositories/chat-repository'
 import { DatabaseRepository } from '../domain/repositories/database-repository'
 import { GhostRepository } from '../domain/repositories/ghost-repository'
@@ -17,7 +19,10 @@ export class ChatBot {
   constructor (client: Whatsapp, stickerRepository: StickerRepository,
     databaseRepository: DatabaseRepository,
     chatRepository: ChatRepository,
-    ghostRepository: GhostRepository) {
+    ghostRepository: GhostRepository,
+    private readonly _antiSpamRepository: AntiSpamRepository,
+    private readonly _banRepository: BanRepository
+  ) {
     this._client = client
     this._stickerRepository = stickerRepository
     this._databaseRepository = databaseRepository
@@ -39,6 +44,11 @@ export class ChatBot {
     if (authorized || message.fromMe || contact.isMyContact) {
       if (chat.id._serialized === this._stickerChatId) {
         await this._ghostRepository.checkGhost(message)
+        // Evita spam
+        if (await this._antiSpamRepository.checkMessage(message)) {
+          await this._banRepository.ban(message, 'spam')
+          return
+        }
       }
       switch (message.body) {
         case '#chatId':
@@ -57,6 +67,12 @@ export class ChatBot {
             }
           }
           break
+        case '#ban':
+          await this._banRepository.adminBan(message)
+          break
+        case '#banLogs':
+          await this._banRepository.getLogs(message)
+          break
         case '#ajuda':
         case '#help' :
           if (message.fromMe) {
@@ -66,13 +82,11 @@ export class ChatBot {
           }
           break
         default:
-          // Retorna e nao faz nada se for comando para banir do grupo
-          if ((await this.ban(message, chat))) { return }
-          // Retorna e nao faz nada se for banido do grupo
+          // Bane se a mensagem contem link
           if ((await this.checkForLinkInGroup(message, chat))) { return }
           // Pega o link do grupo
           if ((await this.getGroupCode(message, chat))) { return }
-          if ((message.hasMedia && message.body === '#sticker') || (message.body !== undefined && message.body === '#sticker' && message.hasQuotedMsg)) {
+          if ((message.hasMedia && message.body.toLowerCase() === '#sticker') || (message.body !== undefined && message.body.toLowerCase() === '#sticker' && message.hasQuotedMsg)) {
             const contact = await message.getContact()
             if ((chat.isGroup || message.fromMe || contact.isMyContact) && (!contact.isBlocked)) {
               if (message.body === '#sticker' && message.hasQuotedMsg) {
@@ -106,24 +120,6 @@ export class ChatBot {
       return true
     }
     return false
-  }
-
-  async ban (message: Message, chat: Chat): Promise<boolean> {
-    if (chat.isGroup && message.body.toLowerCase().startsWith('#ban') && message.hasQuotedMsg) {
-      const groupChat = chat as GroupChat
-      const contact = await message.getContact()
-      const participant = groupChat.participants.find((value) => value.id._serialized === contact.id._serialized)
-      if (participant.isAdmin) {
-        const quotedMsg = await message.getQuotedMessage()
-        const contactToRemove = await quotedMsg.getContact()
-        await groupChat.removeParticipants([contactToRemove.id._serialized])
-        return true
-      } else {
-        return false
-      }
-    } else {
-      return false
-    }
   }
 
   async getGroupCode (message: Message, chat: Chat): Promise<boolean> {

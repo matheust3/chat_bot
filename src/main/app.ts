@@ -15,6 +15,12 @@ import { AddChatToAuthorizedChatsFileDatasource } from '../infra/database/add-ch
 import { GhostRepositoryImpl } from '../data/repositories/ghost-repository-impl'
 import { SaveGhostDataFileDatasource } from '../infra/save-ghost-data-file-datasource'
 import { LoadGhostDataFileDatasource } from '../infra/load-ghost-data-file-datasource'
+import { BanRepositoryImpl } from '../data/repositories/ban-repository-impl'
+import { LokiBanLogsDatasource } from '../infra/loki-ban-logs-datasource'
+import LokiJs from 'lokijs'
+import path from 'path'
+import { AntiSpamRepositoryImpl } from '../data/repositories/anti-spam-repository-impl'
+import { LokiAntiFloodDatasource } from '../infra/loki-anti-flood-datasource'
 
 const createStaticStickerDatasource = new CreateStaticStickerDatasourceImpl()
 const createAnimatedStickerDatasource = new CreateAnimatedStickerDatasourceImpl()
@@ -44,21 +50,29 @@ let sessionCfg
 if (fs.existsSync(SESSION_FILE_PATH)) {
   sessionCfg = JSON.parse(fs.readFileSync(SESSION_FILE_PATH).toString('ascii'))
 }
+//! infra
+const lokiDb = new LokiJs(path.join(__dirname, '../../database-files/loki_db.db'), { persistenceMethod: 'fs' })
+const antiFloodDb = new LokiJs('', { persistenceMethod: 'memory' }) // in memory
 //! datasources
 const saveGhostDataFileDatasource = new SaveGhostDataFileDatasource()
 const loadGhostDataFileDatasource = new LoadGhostDataFileDatasource()
 const loadAuthorizedChatsFileDatasource = new LoadAuthorizedChatsFileDatasource()
 const addChatToAuthorizedChatsFileDatasource = new AddChatToAuthorizedChatsFileDatasource()
+const banLogsDatasource = new LokiBanLogsDatasource(lokiDb)
+const antiFloodDatasource = new LokiAntiFloodDatasource(antiFloodDb, 30)
 //! repositories
 const databaseRepository = new DatabaseRepositoryImpl(
   loadAuthorizedChatsFileDatasource,
   addChatToAuthorizedChatsFileDatasource
 
 )
+const banRepository = new BanRepositoryImpl(banLogsDatasource)
 const ghostRepository = new GhostRepositoryImpl(loadGhostDataFileDatasource, saveGhostDataFileDatasource)
 const chatRepository = new ChatRepositoryImpl()
+const antiSpamRepository = new AntiSpamRepositoryImpl(antiFloodDatasource)
+
 const client = new Client({ puppeteer: { headless: true, args: ['--no-sandbox'] }, session: sessionCfg })
-const chatBot = new ChatBot(client, stickerRepository, databaseRepository, chatRepository, ghostRepository)
+const chatBot = new ChatBot(client, stickerRepository, databaseRepository, chatRepository, ghostRepository, antiSpamRepository, banRepository)
 // Print o qrcode no console
 client.on('qr', (qr) => {
   qrCode.generate(qr, { small: true })

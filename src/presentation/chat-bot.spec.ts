@@ -1,5 +1,7 @@
 import { mock, MockProxy } from 'jest-mock-extended'
 import { Chat, Client as Whatsapp, Contact, GroupChat, Message, MessageMedia } from 'whatsapp-web.js'
+import { AntiSpamRepository } from '../domain/repositories/anti-spam-repository'
+import { BanRepository } from '../domain/repositories/ban-repository'
 import { ChatRepository } from '../domain/repositories/chat-repository'
 import { DatabaseRepository } from '../domain/repositories/database-repository'
 import { GhostRepository } from '../domain/repositories/ghost-repository'
@@ -17,6 +19,8 @@ interface SutTypes{
   stickerRepository: MockProxy<StickerRepository> & StickerRepository
   chatRepository: MockProxy<ChatRepository> & ChatRepository
   ghostRepository: MockProxy<GhostRepository> & GhostRepository
+  antiSpamRepository: MockProxy<AntiSpamRepository> & AntiSpamRepository
+  banRepository: MockProxy<BanRepository> & BanRepository
   chat: Chat
   contact: Contact
 }
@@ -28,6 +32,8 @@ const makeSut = (): SutTypes => {
   const databaseRepository = mock<DatabaseRepository>()
   const chatRepository = mock<ChatRepository>()
   const ghostRepository = mock<GhostRepository>()
+  const antiSpamRepository = mock<AntiSpamRepository>()
+  const banRepository = mock<BanRepository>()
 
   message.body = '#sticker'
   message.hasQuotedMsg = false
@@ -60,7 +66,7 @@ const makeSut = (): SutTypes => {
   databaseRepository.isChatAuthorized.mockResolvedValue(true)
   chatRepository.getChatId.mockResolvedValue('chatId')
 
-  const chatBot = new ChatBot(whatsApp, stickerRepository, databaseRepository, chatRepository, ghostRepository)
+  const chatBot = new ChatBot(whatsApp, stickerRepository, databaseRepository, chatRepository, ghostRepository, antiSpamRepository, banRepository)
 
   return {
     whatsApp,
@@ -74,9 +80,59 @@ const makeSut = (): SutTypes => {
     contact,
     databaseRepository,
     chatRepository,
-    ghostRepository
+    ghostRepository,
+    antiSpamRepository,
+    banRepository
   }
 }
+
+describe('chat-bot.spec.ts - antiSpam', () => {
+  test('ensure call antispam repository if is sticker chat', async () => {
+    //! Arrange
+    const { message, chatBot, antiSpamRepository, chat } = makeSut()
+    chat.id._serialized = '556599216704-1613557634@g.us'
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(antiSpamRepository.checkMessage).toBeCalledWith(message)
+  })
+
+  test('ensure ban user if message is spam', async () => {
+    //! Arrange
+    const { message, chatBot, antiSpamRepository, chat, banRepository } = makeSut()
+    chat.id._serialized = '556599216704-1613557634@g.us'
+    antiSpamRepository.checkMessage.mockResolvedValue(true)
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(antiSpamRepository.checkMessage).toBeCalledWith(message)
+    expect(banRepository.ban).toHaveBeenCalledWith(message, 'spam')
+  })
+})
+
+describe('chat-bot.spec.ts - #ban', () => {
+  test('ensure call admin ban if #ban', async () => {
+    //! Arrange
+    const { message, chatBot, banRepository } = makeSut()
+    message.body = '#ban'
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(banRepository.adminBan).toHaveBeenCalledWith(message)
+  })
+})
+describe('chat-bot.spec.ts - #banLogs', () => {
+  test('ensure call admin ban if #ban', async () => {
+    //! Arrange
+    const { message, chatBot, banRepository } = makeSut()
+    message.body = '#banLogs'
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(banRepository.getLogs).toHaveBeenCalledWith(message)
+  })
+})
+
 describe('chat-bot.spec.ts - ghostRepository', () => {
   test('ensure check if is ghost if is sticker chat', async () => {
     //! Arrange
