@@ -164,8 +164,12 @@ export class ChatBot {
     let msgMedia: MessageMedia
     try {
       msgMedia = await mediaMessage.downloadMedia()
+      if (msgMedia === undefined) {
+        await mediaMessage.reply('Não consegui baixar o conteúdo da mensagem pra fazer a figurinha 😪😪')
+        return
+      }
     } catch (e) {
-      await mediaMessage.reply('Nao consegui baixar a imagem pra fazer a figurinha 😪😪')
+      await mediaMessage.reply('Não consegui baixar o conteúdo da mensagem pra fazer a figurinha 😪😪')
       console.error(e)
       return
     }

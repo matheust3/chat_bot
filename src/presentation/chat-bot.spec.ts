@@ -582,8 +582,18 @@ describe('ChatBot -- #sticker', () => {
     //! Act
     await chatBot.onAnyMessage(message)
     //! Assert
-    expect(message.reply).toHaveBeenCalledWith('Nao consegui baixar a imagem pra fazer a figurinha 😪😪')
+    expect(message.reply).toHaveBeenCalledWith('Não consegui baixar o conteúdo da mensagem pra fazer a figurinha 😪😪')
     expect(console.error).toHaveBeenCalledWith(Error('test error - error to download media'))
+  })
+  test('ensure return a message if media of message if undefined', async () => {
+    //! Arrange
+    const { message, chatBot } = makeSut()
+    message.downloadMedia.mockReturnValue(new Promise((resolve, reject) => resolve(undefined as never)))
+    jest.spyOn(global.console, 'error')
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(message.reply).toHaveBeenCalledWith('Não consegui baixar o conteúdo da mensagem pra fazer a figurinha 😪😪')
   })
   test('ensure send a message if send sticker throws', async () => {
     //! Arrange
