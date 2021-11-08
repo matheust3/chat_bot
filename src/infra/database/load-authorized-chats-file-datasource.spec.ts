@@ -1,5 +1,6 @@
 import { LoadAuthorizedChatsFileDatasource } from './load-authorized-chats-file-datasource'
 import * as fs from 'fs'
+import path from 'path'
 
 interface SutTypes{
   datasource: LoadAuthorizedChatsFileDatasource
@@ -28,7 +29,7 @@ describe('load-authorized-chats-file-datasource.spec.ts - load', () => {
     //! Assert
     expect(result).toEqual([])
     expect(mockFsExistsSync).toHaveBeenCalledWith(
-      `${__dirname}/../../../database-files/authorized-chats.json`
+      path.join(__dirname, '/../../../database-files/authorized-chats.json')
     )
   })
   test('ensure return chats from file', () => {
@@ -40,7 +41,7 @@ describe('load-authorized-chats-file-datasource.spec.ts - load', () => {
     const result = datasource.load()
     //! Assert
     expect(result).toEqual(['ChatId'])
-    expect(mockFsReadFileSync).toHaveBeenCalledWith(`${__dirname}/../../../database-files/authorized-chats.json`, { encoding: 'utf-8' })
+    expect(mockFsReadFileSync).toHaveBeenCalledWith(path.join(__dirname, '/../../../database-files/authorized-chats.json'), { encoding: 'utf-8' })
   })
   test('ensure throws if fs throws', async () => {
     //! Arrange

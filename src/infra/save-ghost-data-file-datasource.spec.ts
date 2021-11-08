@@ -1,6 +1,7 @@
 import { SaveGhostDataFileDatasource } from './save-ghost-data-file-datasource'
 import * as fs from 'fs'
 import { GhostData } from '../domain/models/ghost-data'
+import path from 'path'
 
 jest.mock('fs')
 const mockFsWriteFileSync = (fs.writeFileSync as jest.Mock)
@@ -29,7 +30,7 @@ describe('save-ghost-data-file-datasource.spec.ts - save', () => {
     await datasource.save(ghostData)
     //! Assert
     expect(mockFsWriteFileSync).toHaveBeenCalledWith(
-      `${__dirname}/../../database-files/ghost-data.json`, JSON.stringify(ghostData), { encoding: 'utf-8' }
+      path.join(__dirname, '/../../database-files/ghost-data.json'), JSON.stringify(ghostData), { encoding: 'utf-8' }
     )
   })
 

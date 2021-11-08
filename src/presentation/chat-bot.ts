@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { Chat, GroupChat, Client as Whatsapp, Message, MessageMedia } from 'whatsapp-web.js'
 import { Sticker } from '../domain/models/sticker'
 import { AntiSpamRepository } from '../domain/repositories/anti-spam-repository'
@@ -35,7 +34,7 @@ export class ChatBot {
     const chat = await message.getChat()
     const contact = await message.getContact()
     // Verifica se o chat eh autorizado
-    let authorized: boolean
+    let authorized = false
     try {
       authorized = await this._databaseRepository.isChatAuthorized(chat.id._serialized)
     } catch (e) {
@@ -86,10 +85,11 @@ export class ChatBot {
           if ((await this.checkForLinkInGroup(message, chat))) { return }
           // Pega o link do grupo
           if ((await this.getGroupCode(message, chat))) { return }
+
           if ((message.hasMedia && message.body.toLowerCase() === '#sticker') || (message.body !== undefined && message.body.toLowerCase() === '#sticker' && message.hasQuotedMsg)) {
             const contact = await message.getContact()
-            if ((chat.isGroup || message.fromMe || contact.isMyContact) && (!contact.isBlocked)) {
-              if (message.body === '#sticker' && message.hasQuotedMsg) {
+            if ((chat.isGroup || message.fromMe || contact.isMyContact) && !contact.isBlocked) {
+              if (message.body.toLowerCase() === '#sticker' && message.hasQuotedMsg) {
                 const quotedMsg = await message.getQuotedMessage()
                 if (quotedMsg.hasMedia) {
                   await this.createSticker(message, true, chat)
@@ -103,8 +103,8 @@ export class ChatBot {
               if (contact.isBlocked) {
                 await message.reply('🥱')
               } else {
-                const stickerChat = await this._client.getChatById(this._stickerChatId) as GroupChat
-                const inviteCode = await stickerChat.getInviteCode()
+                const stickerChat: GroupChat = Object.assign(await this._client.getChatById(this._stickerChatId))
+                const inviteCode: string = await stickerChat.getInviteCode()
                 await this._client.sendMessage(chat.id._serialized, `=> Esta é uma mensagem do bot <=\n\nMeu criador só autoriza seus contatos a fazerem figurinhas no privado, mas você ainda pode me usar nos grupos em que meu criador participa\n\nAqui esta um desses grupos:\nhttps://chat.whatsapp.com/${inviteCode}`)
               }
             }
@@ -124,12 +124,12 @@ export class ChatBot {
 
   async getGroupCode (message: Message, chat: Chat): Promise<boolean> {
     if (message.body.toLowerCase().startsWith('#link')) {
-      let groupChat: GroupChat = (chat as GroupChat)
+      let groupChat: GroupChat = Object.assign(chat)
       if (groupChat.id._serialized !== this._stickerChatIdToNotReturn) {
         if (!chat.isGroup || !groupChat.name.toLowerCase().includes('figurinhas')) {
-          groupChat = (await this._client.getChatById(this._stickerChatId)) as GroupChat
+          groupChat = Object.assign(await this._client.getChatById(this._stickerChatId))
         }
-        const groupCode = await groupChat.getInviteCode()
+        const groupCode: string = await groupChat.getInviteCode()
         await message.reply(`https://chat.whatsapp.com/${groupCode}`)
         return true
       } else {
@@ -142,7 +142,7 @@ export class ChatBot {
 
   async checkForLinkInGroup (message: Message, chat: Chat): Promise<boolean> {
     if (chat.isGroup && !message.fromMe) {
-      const groupChat: GroupChat = (chat as GroupChat)
+      const groupChat: GroupChat = Object.assign(chat)
       if (groupChat.name.toLowerCase().includes('figurinhas')) {
         if (message.links.length > 0) {
           await message.reply('Mensagem do Bot: \n🚫 CONTEÚDO MALICIOSO OU FORA DO CONTEXTO DO GRUPO 🚫')
@@ -164,8 +164,12 @@ export class ChatBot {
     let msgMedia: MessageMedia
     try {
       msgMedia = await mediaMessage.downloadMedia()
+      if (msgMedia === undefined) {
+        await mediaMessage.reply('Não consegui baixar o conteúdo da mensagem pra fazer a figurinha 😪😪')
+        return
+      }
     } catch (e) {
-      await mediaMessage.reply('Nao consegui baixar a imagem pra fazer a figurinha 😪😪')
+      await mediaMessage.reply('Não consegui baixar o conteúdo da mensagem pra fazer a figurinha 😪😪')
       console.error(e)
       return
     }
@@ -181,7 +185,7 @@ export class ChatBot {
       if (result?.valid) {
         const media = MessageMedia.fromFilePath(result.path)
         try {
-          await this._client.sendMessage(chat.id._serialized, null, { media: media, sendMediaAsSticker: true })
+          await this._client.sendMessage(chat.id._serialized, '', { media: media, sendMediaAsSticker: true })
         } catch (err) {
           await message.reply('Nao consegui enviar sua figurinha 😓 - Tente diminuir o tamanho do arquivo (em MB)')
           console.error(err)

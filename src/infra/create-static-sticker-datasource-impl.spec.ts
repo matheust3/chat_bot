@@ -1,5 +1,6 @@
 import { CreateStaticStickerDatasourceImpl } from './create-static-sticker-datasource-impl'
 import fs from 'fs'
+import path from 'path'
 
 jest.mock('uuid', () => ({
   v4: (): string => 'uId'
@@ -29,7 +30,7 @@ describe('CreateStaticStickerDatasourceImpl', () => {
     //! Act
     await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
-    expect(fs.existsSync).toHaveBeenCalledWith(`${__dirname}/../cache`)
+    expect(fs.existsSync).toHaveBeenCalledWith(path.join(__dirname, '/../cache'))
   })
   test('ensure create cache folder if not exists', async () => {
     //! Arrange
@@ -39,7 +40,7 @@ describe('CreateStaticStickerDatasourceImpl', () => {
     //! Act
     await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
-    expect(fs.mkdirSync).toHaveBeenCalledWith(`${__dirname}/../cache`)
+    expect(fs.mkdirSync).toHaveBeenCalledWith(path.join(__dirname, '/../cache'))
   })
   test('ensure save file in cache folder to convert to png image', async () => {
     //! Arrange
@@ -48,7 +49,7 @@ describe('CreateStaticStickerDatasourceImpl', () => {
     //! Act
     await datasource.createSticker(buffer)
     //! Assert
-    expect(fs.writeFileSync).toHaveBeenCalledWith(`${__dirname}/../cache/uId`, buffer)
+    expect(fs.writeFileSync).toHaveBeenCalledWith(path.join(__dirname, '/../cache/uId'), buffer)
   })
   test('ensure convert file to png', async () => {
     //! Arrange
@@ -56,7 +57,7 @@ describe('CreateStaticStickerDatasourceImpl', () => {
     //! Act
     await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
-    expect(execFunc).toHaveBeenCalledWith(`mogrify -format png ${__dirname}/../cache/uId`)
+    expect(execFunc).toHaveBeenCalledWith(`mogrify -format png ${path.join(__dirname, '/../cache/uId')}`)
   })
   test('ensure return path to new file', async () => {
     //! Arrange
@@ -64,7 +65,7 @@ describe('CreateStaticStickerDatasourceImpl', () => {
     //! Act
     const result = await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
-    expect(result).toEqual(`${__dirname}/../cache/uId.png`)
+    expect(result).toEqual(path.join(__dirname, '/../cache/uId.png'))
   })
   test('ensure return null if stderr', async () => {
     //! Arrange

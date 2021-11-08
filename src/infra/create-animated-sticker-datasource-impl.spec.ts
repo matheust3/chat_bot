@@ -1,4 +1,5 @@
 import fs from 'fs'
+import path from 'path'
 import { CreateAnimatedStickerDatasourceImpl } from './create-animated-sticker-datasource-impl'
 
 jest.mock('uuid', () => ({
@@ -31,7 +32,7 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
     //! Act
     await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
-    expect(fs.existsSync).toHaveBeenCalledWith(`${__dirname}/../cache`)
+    expect(fs.existsSync).toHaveBeenCalledWith(path.join(__dirname, '/../cache'))
   })
   test('ensure create cache folder if not exists', async () => {
     //! Arrange
@@ -43,7 +44,7 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
     //! Act
     await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
-    expect(fs.mkdirSync).toHaveBeenCalledWith(`${__dirname}/../cache`)
+    expect(fs.mkdirSync).toHaveBeenCalledWith(path.join(__dirname, '/../cache'))
   })
   test('ensure save file in cache folder to convert to png image', async () => {
     //! Arrange
@@ -54,7 +55,7 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
     //! Act
     await datasource.createSticker(buffer)
     //! Assert
-    expect(fs.writeFileSync).toHaveBeenCalledWith(`${__dirname}/../cache/uId`, buffer)
+    expect(fs.writeFileSync).toHaveBeenCalledWith(path.join(__dirname, '/../cache/uId'), buffer)
   })
   test('ensure convert file to a webp if width>height', async () => {
     //! Arrange
@@ -65,7 +66,9 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
     await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
     expect(execFunc.mock.calls).toEqual([
+      // eslint-disable-next-line node/no-path-concat
       [`ffprobe -v quiet -print_format json -show_streams ${__dirname}/../cache/uId`],
+      // eslint-disable-next-line node/no-path-concat
       [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=ih:h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=512:512,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
     ])
   })
@@ -78,7 +81,9 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
     await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
     expect(execFunc.mock.calls).toEqual([
+      // eslint-disable-next-line node/no-path-concat
       [`ffprobe -v quiet -print_format json -show_streams ${__dirname}/../cache/uId`],
+      // eslint-disable-next-line node/no-path-concat
       [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=iw:h=iw:x=(iw/2)/2:y=(ih/2)/2,scale=512:512,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
     ])
   })
@@ -103,7 +108,9 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
     await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
     expect(execFunc.mock.calls).toEqual([
+      // eslint-disable-next-line node/no-path-concat
       [`ffprobe -v quiet -print_format json -show_streams ${__dirname}/../cache/uId`],
+      // eslint-disable-next-line node/no-path-concat
       [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=ih:h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=512:512,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
     ])
   })
@@ -116,7 +123,9 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
     await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
     expect(execFunc.mock.calls).toEqual([
+      // eslint-disable-next-line node/no-path-concat
       [`ffprobe -v quiet -print_format json -show_streams ${__dirname}/../cache/uId`],
+      // eslint-disable-next-line node/no-path-concat
       [`ffmpeg  -i ${__dirname}/../cache/uId -vf "crop=w=ih:h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=512:512,fps=10" -loop 0 ${__dirname}/../cache/uId.webp -hide_banner -loglevel error`]
     ])
   })
@@ -128,7 +137,7 @@ describe('CreateAnimatedStickerDatasourceImpl', () => {
     //! Act
     const result = await datasource.createSticker(Buffer.from('any buffer'))
     //! Assert
-    expect(result).toEqual(`${__dirname}/../cache/uId.webp`)
+    expect(result).toEqual(path.join(__dirname, '/../cache/uId.webp'))
   })
   test('ensure return null if stderr to get resolution', async () => {
     //! Arrange

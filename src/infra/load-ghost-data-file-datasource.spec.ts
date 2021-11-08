@@ -1,6 +1,7 @@
 import { LoadGhostDataFileDatasource } from './load-ghost-data-file-datasource'
 import * as fs from 'fs'
 import { GhostData } from '../domain/models/ghost-data'
+import path from 'path'
 
 jest.mock('fs')
 const mockFsExistsSync = (fs.existsSync as jest.Mock)
@@ -28,7 +29,7 @@ describe('load-ghost-data-file-datasource.spec.ts - load', () => {
     const result = await datasource.load()
     //! Assert
     expect(result).toEqual({ contacts: [] } as GhostData)
-    expect(mockFsExistsSync).toHaveBeenCalledWith(`${__dirname}/../../database-files/ghost-data.json`)
+    expect(mockFsExistsSync).toHaveBeenCalledWith(path.join(__dirname, '/../../database-files/ghost-data.json'))
   })
   test('ensure load file is exists', async () => {
     //! Arrange
@@ -39,7 +40,7 @@ describe('load-ghost-data-file-datasource.spec.ts - load', () => {
     //! Act
     const result = await datasource.load()
     //! Assert
-    expect(mockFsReadFileSync).toHaveBeenCalledWith(`${__dirname}/../../database-files/ghost-data.json`, { encoding: 'utf-8' })
+    expect(mockFsReadFileSync).toHaveBeenCalledWith(path.join(__dirname, '/../../database-files/ghost-data.json'), { encoding: 'utf-8' })
     expect(result).toEqual(data)
   })
 })

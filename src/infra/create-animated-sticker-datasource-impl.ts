@@ -3,17 +3,19 @@ import fs from 'fs'
 import { v4 } from 'uuid'
 import { promisify } from 'util'
 import child_process from 'child_process'
+import path from 'path'
 
 export class CreateAnimatedStickerDatasourceImpl implements CreateAnimatedStickerDatasource {
-  async createSticker (data: Buffer): Promise<string> {
+  async createSticker (data: Buffer): Promise<string | null> {
     /* istanbul ignore else */
-    if (!fs.existsSync(`${__dirname}/../cache`)) {
-      fs.mkdirSync(`${__dirname}/../cache`)
+    if (!fs.existsSync(path.join(__dirname, '/../cache'))) {
+      fs.mkdirSync(path.join(__dirname, '/../cache'))
     }
     const uuid = v4()
-    fs.writeFileSync(`${__dirname}/../cache/${uuid}`, data)
+    fs.writeFileSync(path.join(__dirname, '/../cache', uuid), data)
 
     const exec = promisify(child_process.exec)
+    // eslint-disable-next-line node/no-path-concat
     const { stdout, stderr } = await exec(`ffprobe -v quiet -print_format json -show_streams ${__dirname}/../cache/${uuid}`)
     if (stderr === '') {
       const mediaData = JSON.parse(stdout)
@@ -33,9 +35,11 @@ export class CreateAnimatedStickerDatasourceImpl implements CreateAnimatedSticke
       }
       let err: string
       if (width > height) {
+        // eslint-disable-next-line node/no-path-concat
         const { stderr } = await exec(`ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "crop=w=ih:h=ih:x=(iw/2)/2:y=(ih/2)/2,scale=512:512,fps=10" -loop 0 ${__dirname}/../cache/${uuid}.webp -hide_banner -loglevel error`)
         err = stderr
       } else {
+        // eslint-disable-next-line node/no-path-concat
         const { stderr } = await exec(`ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "crop=w=iw:h=iw:x=(iw/2)/2:y=(ih/2)/2,scale=512:512,fps=10" -loop 0 ${__dirname}/../cache/${uuid}.webp -hide_banner -loglevel error`)
         err = stderr
       }
@@ -43,7 +47,7 @@ export class CreateAnimatedStickerDatasourceImpl implements CreateAnimatedSticke
         console.error(err)
         return null
       } else {
-        return `${__dirname}/../cache/${uuid}.webp`
+        return path.join(__dirname, '/../cache/', `${uuid}.webp`)
       }
     } else {
       console.error(stderr)

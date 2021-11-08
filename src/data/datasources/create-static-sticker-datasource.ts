@@ -1,3 +1,3 @@
 export interface CreateStaticStickerDatasource{
-  createSticker: (data: Buffer) => Promise<string>
+  createSticker: (data: Buffer) => Promise<string | null>
 }

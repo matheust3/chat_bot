@@ -20,7 +20,7 @@ describe('loki-anti-flood-datasource.spec.ts - checkIfIsFlood', () => {
   test('ensure add a collection to database', async () => {
     //! Arrange
     db = mock<LokiJs>()
-    db.getCollection.mockReturnValue(null)
+    db.getCollection.mockReturnValue(null as never)
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const t = new LokiAntiFloodDatasource(db, 30)
     //! Assert
@@ -49,7 +49,7 @@ describe('loki-anti-flood-datasource.spec.ts - checkIfIsFlood', () => {
     //! Arrange
     const l = []
     for (let i = 0; i < 31; i++) {
-      l.push({})
+      l.push({} as never)
     }
     collection.find.mockReturnValue(l)
     //! Act
@@ -62,7 +62,7 @@ describe('loki-anti-flood-datasource.spec.ts - checkIfIsFlood', () => {
     //! Arrange
     const l = []
     for (let i = 0; i < 30; i++) {
-      l.push({})
+      l.push({} as never)
     }
     collection.find.mockReturnValue(l)
     //! Act

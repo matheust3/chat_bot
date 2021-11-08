@@ -1,4 +1,5 @@
 import { mock, MockProxy } from 'jest-mock-extended'
+import path from 'path'
 import { Chat, Client as Whatsapp, Contact, GroupChat, Message, MessageMedia } from 'whatsapp-web.js'
 import { AntiSpamRepository } from '../domain/repositories/anti-spam-repository'
 import { BanRepository } from '../domain/repositories/ban-repository'
@@ -38,7 +39,9 @@ const makeSut = (): SutTypes => {
   message.body = '#sticker'
   message.hasQuotedMsg = false
   const responseMessage = mock<Message>()
+  responseMessage.hasQuotedMsg = true
   message.body = '#sticker'
+  message.hasMedia = true
   const fileBuffer = Buffer.from('file')
   const chat: Chat = mock<Chat>()
   chat.id._serialized = 'id of chat'
@@ -53,7 +56,7 @@ const makeSut = (): SutTypes => {
     mimetype: 'image',
     filename: 'any file name'
   }
-  jest.spyOn(stickerRepository, 'createSticker').mockReturnValue(new Promise(resolve => resolve({ path: `${__dirname}/../../fixtures/png.png`, type: 'static', valid: true })))
+  jest.spyOn(stickerRepository, 'createSticker').mockReturnValue(new Promise(resolve => resolve({ path: path.join(__dirname, '/../../fixtures/png.png'), type: 'static', valid: true })))
   jest.spyOn(stickerRepository, 'createSticker')
   jest.spyOn(message, 'downloadMedia').mockReturnValue(new Promise(resolve => resolve(mediaMessage)))
   jest.spyOn(message, 'getChat').mockReturnValue(new Promise(resolve => resolve(chat)))
@@ -423,8 +426,11 @@ describe('chat-bot.spec.ts - check for links', () => {
   test('ensure remove user if message as link', async () => {
     //! Arrange
     const { message, chatBot, chat } = makeSut()
-    const groupChat: GroupChat = chat as GroupChat
-    message.links = ['link']
+    const groupChat: GroupChat = Object.assign(chat)
+    message.links = [{
+      isSuspicious: false,
+      link: 'link'
+    }]
     groupChat.isGroup = true
     groupChat.name = 'figurinhas'
     message.fromMe = false
@@ -438,8 +444,11 @@ describe('chat-bot.spec.ts - check for links', () => {
   test('ensure not remove user if message as link and is me', async () => {
     //! Arrange
     const { message, chatBot, chat } = makeSut()
-    const groupChat: GroupChat = chat as GroupChat
-    message.links = ['link']
+    const groupChat: GroupChat = Object.assign(chat)
+    message.links = [{
+      isSuspicious: false,
+      link: 'link'
+    }]
     groupChat.isGroup = true
     groupChat.name = 'figurinhas'
     message.fromMe = true
@@ -455,9 +464,11 @@ describe('chat-bot.spec.ts - check for links', () => {
 describe('ChatBot -- #sticker', () => {
   test('ensure call sticker repository to create a sticker if body is #sticker and quotedMsgObj != null and quotedMsg type == "image"', async () => {
     //! Arrange
-    const { responseMessage, mediaMessage, stickerRepository, chatBot, fileBuffer } = makeSut()
+    const { responseMessage, mediaMessage, stickerRepository, chatBot, fileBuffer, message } = makeSut()
     responseMessage.body = '#sticker'
     mediaMessage.mimetype = 'image'
+    responseMessage.hasQuotedMsg = true
+    message.hasMedia = true
     //! Act
     await chatBot.onAnyMessage(responseMessage)
     //! Assert
@@ -465,9 +476,11 @@ describe('ChatBot -- #sticker', () => {
   })
   test('ensure call sticker repository to create a sticker if body is #sticker and quotedMsgObj != null and quotedMsg type == "video"', async () => {
     //! Arrange
-    const { responseMessage, mediaMessage, stickerRepository, chatBot, fileBuffer } = makeSut()
+    const { responseMessage, message, mediaMessage, stickerRepository, chatBot, fileBuffer } = makeSut()
     responseMessage.body = '#sticker'
     mediaMessage.mimetype = 'video'
+    responseMessage.hasQuotedMsg = true
+    message.hasMedia = true
     //! Act
     await chatBot.onAnyMessage(responseMessage)
     //! Assert
@@ -534,23 +547,23 @@ describe('ChatBot -- #sticker', () => {
     //! Arrange
     const { message, mediaMessage, chatBot, chat, whatsApp, stickerRepository } = makeSut()
     mediaMessage.mimetype = 'video'
-    jest.spyOn(stickerRepository, 'createSticker').mockReturnValue(new Promise(resolve => resolve({ path: `${__dirname}/../../fixtures/gif.gif`, type: 'animated', valid: true })))
-    const mediaMessageResponse = MessageMedia.fromFilePath(`${__dirname}/../../fixtures/gif.gif`)
+    jest.spyOn(stickerRepository, 'createSticker').mockReturnValue(new Promise(resolve => resolve({ path: path.join(__dirname, '/../../fixtures/gif.gif'), type: 'animated', valid: true })))
+    const mediaMessageResponse = MessageMedia.fromFilePath(path.join(__dirname, '/../../fixtures/gif.gif'))
     //! Act
     await chatBot.onAnyMessage(message)
     //! Assert
-    expect(whatsApp.sendMessage).toHaveBeenCalledWith(chat.id._serialized, null, { media: mediaMessageResponse, sendMediaAsSticker: true })
+    expect(whatsApp.sendMessage).toHaveBeenCalledWith(chat.id._serialized, '', { media: mediaMessageResponse, sendMediaAsSticker: true })
   })
   test('ensure send static sticker if sticker is valid and is static', async () => {
     //! Arrange
     const { message, mediaMessage, chatBot, chat, whatsApp, stickerRepository } = makeSut()
     mediaMessage.mimetype = 'image'
-    jest.spyOn(stickerRepository, 'createSticker').mockReturnValue(new Promise(resolve => resolve({ path: `${__dirname}/../../fixtures/png.png`, type: 'static', valid: true })))
-    const mediaMessageResponse = MessageMedia.fromFilePath(`${__dirname}/../../fixtures/png.png`)
+    jest.spyOn(stickerRepository, 'createSticker').mockReturnValue(new Promise(resolve => resolve({ path: path.join(__dirname, '/../../fixtures/png.png'), type: 'static', valid: true })))
+    const mediaMessageResponse = MessageMedia.fromFilePath(path.join(__dirname, '/../../fixtures/png.png'))
     //! Act
     await chatBot.onAnyMessage(message)
     //! Assert
-    expect(whatsApp.sendMessage).toHaveBeenCalledWith(chat.id._serialized, null, { media: mediaMessageResponse, sendMediaAsSticker: true })
+    expect(whatsApp.sendMessage).toHaveBeenCalledWith(chat.id._serialized, '', { media: mediaMessageResponse, sendMediaAsSticker: true })
   })
   test('ensure send a message if sticker is invalid', async () => {
     //! Arrange
@@ -569,8 +582,18 @@ describe('ChatBot -- #sticker', () => {
     //! Act
     await chatBot.onAnyMessage(message)
     //! Assert
-    expect(message.reply).toHaveBeenCalledWith('Nao consegui baixar a imagem pra fazer a figurinha 😪😪')
+    expect(message.reply).toHaveBeenCalledWith('Não consegui baixar o conteúdo da mensagem pra fazer a figurinha 😪😪')
     expect(console.error).toHaveBeenCalledWith(Error('test error - error to download media'))
+  })
+  test('ensure return a message if media of message if undefined', async () => {
+    //! Arrange
+    const { message, chatBot } = makeSut()
+    message.downloadMedia.mockReturnValue(new Promise((resolve, reject) => resolve(undefined as never)))
+    jest.spyOn(global.console, 'error')
+    //! Act
+    await chatBot.onAnyMessage(message)
+    //! Assert
+    expect(message.reply).toHaveBeenCalledWith('Não consegui baixar o conteúdo da mensagem pra fazer a figurinha 😪😪')
   })
   test('ensure send a message if send sticker throws', async () => {
     //! Arrange

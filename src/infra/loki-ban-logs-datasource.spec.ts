@@ -19,7 +19,7 @@ describe('loki-ban-logs-datasource.spec.ts - registryBan', () => {
 
   test('ensure return null if collection not exists', async () => {
     //! Arrange
-    db.getCollection.mockReturnValue(null)
+    db.getCollection.mockReturnValue(null as never)
     //! Act
     const result = await lokiBanLogsDatasource.getBanLog('test')
     //! Assert
@@ -74,7 +74,7 @@ describe('loki-ban-logs-datasource.spec.ts - registryBan', () => {
 
   test('ensure add collection if not exists', async () => {
     //! Arrange
-    db.getCollection.mockReturnValue(null)
+    db.getCollection.mockReturnValue(null as never)
     //! Act
     await lokiBanLogsDatasource.registryBan('', '')
     //! Assert
