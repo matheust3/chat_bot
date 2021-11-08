@@ -7,7 +7,7 @@ RUN echo 'deb http://mirror.unesp.br/debian/ buster-updates main contrib non-fre
 RUN echo 'deb-src http://mirror.unesp.br/debian/ buster-updates main contrib non-free\n' >> /etc/apt/sources.list
 RUN echo 'deb http://deb.debian.org/debian buster-backports main' > /etc/apt/sources.list.d/backports.list
 # Prerequisites
-RUN apt update && apt upgrade -y && apt install -y curl git wget tree docker docker-compose chromium imagemagick ffmpeg
+RUN apt update && apt upgrade -y && apt install -y curl git wget tree docker docker-compose chromium imagemagick ffmpeg git-flow
 # Setup new user
 RUN groupmod -g 126 docker
 RUN useradd -ms /bin/bash developer
