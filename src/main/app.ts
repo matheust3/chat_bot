@@ -30,9 +30,9 @@ const stickerRepository = new StickerRepositoryImpl(createStaticStickerDatasourc
 // Apaga os arquivos da pasta 'cache' com mais de um dia
 setInterval(() => {
   /* istanbul ignore else */
-  if (fs.existsSync(`${__dirname}/../cache`)) {
+  if (fs.existsSync(path.join(__dirname, '/../cache'))) {
     const exec = promisify(child_process.exec)
-    exec(`find ${__dirname}/../cache -type f -mtime +1 -delete`).then(() => {
+    exec(`find ${path.join(__dirname, '/../cache')} -type f -mtime +1 -delete`).then(() => {
       console.log('Cache limpo!')
     }).catch((err) => {
       console.log('Erro ao limpar a pasta cache ', err)
@@ -44,12 +44,6 @@ setInterval(() => {
 //                 Inicia o Bot
 //= ====================================================
 
-const SESSION_FILE_PATH = `${__dirname}/../../tokens/session.json`
-let sessionCfg
-
-if (fs.existsSync(SESSION_FILE_PATH)) {
-  sessionCfg = JSON.parse(fs.readFileSync(SESSION_FILE_PATH).toString('ascii'))
-}
 //! infra
 const lokiDb = new LokiJs(path.join(__dirname, '/../../database-files/loki_db.db'), {
   env: 'NODEJS',
@@ -76,21 +70,15 @@ const ghostRepository = new GhostRepositoryImpl(loadGhostDataFileDatasource, sav
 const chatRepository = new ChatRepositoryImpl()
 const antiSpamRepository = new AntiSpamRepositoryImpl(antiFloodDatasource)
 
-const client = new Client({ puppeteer: { headless: true, args: ['--no-sandbox'] }, session: sessionCfg })
+const client = new Client({ puppeteer: { headless: true, args: ['--no-sandbox'] }, clientId: 'sticker' })
 const chatBot = new ChatBot(client, stickerRepository, databaseRepository, chatRepository, ghostRepository, antiSpamRepository, banRepository)
 // Print o qrcode no console
 client.on('qr', (qr) => {
   qrCode.generate(qr, { small: true })
 })
 // Quando a sessão eh autenticada
-client.on('authenticated', (session) => {
-  console.log('AUTHENTICATED', session)
-  sessionCfg = session
-  fs.writeFile(SESSION_FILE_PATH, JSON.stringify(session), function (err) {
-    if (err !== null) {
-      console.error(err)
-    }
-  })
+client.on('authenticated', () => {
+  console.log('AUTHENTICATED')
 })
 // Quando ha falha na sessão
 client.on('auth_failure', msg => {

@@ -11,7 +11,7 @@ export class BanRepositoryImpl implements BanRepository {
 
     let response = ''
     logs.forEach((value) => {
-      response += `date: ${value.date}\nlog: ${value.log}\n---\n`
+      response += `date: ${value.date ?? ''}\nlog: ${value.log}\n---\n`
     })
 
     await message.reply(response === '' ? 'Limpo! 👊' : response)
@@ -33,7 +33,7 @@ export class BanRepositoryImpl implements BanRepository {
     if (chat.isGroup && message.hasQuotedMsg) {
       const contact = await message.getContact()
       const participant = chat.participants.find((value) => value.id._serialized === contact.id._serialized)
-      if (participant.isAdmin) {
+      if (participant?.isAdmin === true) {
         const quotedMsg = await message.getQuotedMessage()
         const contactToRemove = await quotedMsg.getContact()
         if (!contactToRemove.isMe) {

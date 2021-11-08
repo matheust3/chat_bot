@@ -24,17 +24,17 @@ export class StickerRepositoryImpl implements StickerRepository {
       if (result !== undefined && result !== null) {
         return { path: result, type: 'static', valid: true }
       } else {
-        return { path: null, type: 'static', valid: false }
+        return { path: '', type: 'static', valid: false }
       }
     } else if (dataType === 'stickerAnimated') {
       const result = await this._createAnimatedStickerDatasource.createSticker(dataBuffer)
       if (result !== null) {
         return { path: result, type: 'animated', valid: true }
       } else {
-        return { path: null, type: 'animated', valid: false }
+        return { path: '', type: 'animated', valid: false }
       }
     } else {
-      return { path: null, type: 'static', valid: false }
+      return { path: '', type: 'static', valid: false }
     }
   }
 }
