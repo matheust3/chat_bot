@@ -51,7 +51,12 @@ if (fs.existsSync(SESSION_FILE_PATH)) {
   sessionCfg = JSON.parse(fs.readFileSync(SESSION_FILE_PATH).toString('ascii'))
 }
 //! infra
-const lokiDb = new LokiJs(path.join(__dirname, '../../database-files/loki_db.db'), { persistenceMethod: 'fs' })
+const lokiDb = new LokiJs(path.join(__dirname, '/../../database-files/loki_db.db'), {
+  env: 'NODEJS',
+  autosave: true,
+  autosaveInterval: 1000,
+  autoload: true
+})
 const antiFloodDb = new LokiJs('', { persistenceMethod: 'memory' }) // in memory
 //! datasources
 const saveGhostDataFileDatasource = new SaveGhostDataFileDatasource()
