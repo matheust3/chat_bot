@@ -2,9 +2,6 @@
   "name": "dev_chat_bot",
   "service": "dev_chat_bot",
   "dockerComposeFile": "docker-compose.yml",
-  "settings": {
-    "terminal.integrated.shell.linux": null
-  },
   "extensions": [
 	"dotjoshjohnson.xml",
 	"redhat.vscode-yaml",
@@ -18,5 +15,5 @@
 	"streetsidesoftware.code-spell-checker-portuguese-brazilian"
 ],
   "workspaceFolder": "/home/developer/workspace",
-  "postStartCommand": "npm i"
+  "postStartCommand": "npm i && npm install -g npm"
 }
