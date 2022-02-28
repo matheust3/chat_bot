@@ -19,7 +19,16 @@ RUN mkdir -p /home/matheus/Downloads \
 RUN newgrp matheus
 USER matheus
 WORKDIR /home/matheus
-# install snap core
-RUN wget https://nodejs.org/dist/v14.15.1/node-v14.15.1-linux-x64.tar.xz -O node.tar.xz
-RUN tar -xf node.tar.xz
-ENV PATH "$PATH:/home/matheus/node-v14.15.1-linux-x64/bin"
+# install nodejs
+RUN mkdir /home/developer/nvm
+ENV NVM_DIR /home/developer/nvm
+ENV NODE_VERSION 16.14.0
+
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash \
+    && . $NVM_DIR/nvm.sh \
+    && nvm install $NODE_VERSION \
+    && nvm alias default $NODE_VERSION \
+    && nvm use default
+
+ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
+ENV PATH      $NVM_DIR/v$NODE_VERSION/bin:$PATH
