@@ -70,7 +70,7 @@ const ghostRepository = new GhostRepositoryImpl(loadGhostDataFileDatasource, sav
 const chatRepository = new ChatRepositoryImpl()
 const antiSpamRepository = new AntiSpamRepositoryImpl(antiFloodDatasource)
 
-const client = new Client({ puppeteer: { headless: true, args: ['--no-sandbox'] }, clientId: 'sticker' })
+const client = new Client({ puppeteer: { headless: true, args: ['--no-sandbox'] } })
 const chatBot = new ChatBot(client, stickerRepository, databaseRepository, chatRepository, ghostRepository, antiSpamRepository, banRepository)
 // Print o qrcode no console
 client.on('qr', (qr) => {
