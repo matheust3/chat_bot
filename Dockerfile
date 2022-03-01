@@ -11,14 +11,14 @@ RUN apt update && apt install -y netselect-apt
 # Prerequisites
 RUN apt update && apt upgrade -y && apt install -y curl git wget tree chromium imagemagick ffmpeg xz-utils python3.7
 # Add user so we don't need --no-sandbox.
-RUN groupadd -r matheus
-RUN groupmod -g 1000 matheus 
-RUN useradd -ms /bin/bash -g matheus -G audio,video matheus 
-RUN mkdir -p /home/matheus/Downloads \
-  && chown -R matheus:matheus /home/matheus 
-RUN newgrp matheus
-USER matheus
-WORKDIR /home/matheus
+RUN groupadd -r developer
+RUN groupmod -g 1000 developer 
+RUN useradd -ms /bin/bash -g developer -G audio,video developer 
+RUN mkdir -p /home/developer/Downloads \
+  && chown -R developer:developer /home/developer 
+RUN newgrp developer
+USER developer
+WORKDIR /home/developer
 # install nodejs
 RUN mkdir /home/developer/nvm
 ENV NVM_DIR /home/developer/nvm
@@ -31,4 +31,4 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | b
     && nvm use default
 
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
-ENV PATH      $NVM_DIR/v$NODE_VERSION/bin:$PATH
+ENV PATH      $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH

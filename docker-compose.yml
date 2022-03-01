@@ -13,10 +13,10 @@ services:
     build: .
     restart: always
     volumes:
-      - ${DEV_ROOT_DIR}/dist:/home/matheus/dist
-      - ${DEV_ROOT_DIR}/tokens:/home/matheus/tokens
-      - ${DEV_ROOT_DIR}/database-files:/home/matheus/database-files
-      - ${DEV_ROOT_DIR}/package.json:/home/matheus/package.json
+      - ${DEV_ROOT_DIR}/dist:/home/developer/dist
+      - ${DEV_ROOT_DIR}/tokens:/home/developer/tokens
+      - ${DEV_ROOT_DIR}/database-files:/home/developer/database-files
+      - ${DEV_ROOT_DIR}/package.json:/home/developer/package.json
     command: bash -c "npm install --only=prod && ls -l .. && npm run start"
     networks:
       app_net:
