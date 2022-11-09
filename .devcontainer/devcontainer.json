@@ -1,22 +1,17 @@
 {
-  "name": "dev_chat_bot",
-  "service": "dev_chat_bot",
-  "dockerComposeFile": "docker-compose.yml",
-  "settings": {
-    "terminal.integrated.shell.linux": null
-  },
+  "name": "chat_bot_dev_container",
+  "service": "chat_bot_dev_container",
+  "dockerComposeFile": "./docker-compose.yml",
+  //Para copiar o ID do grupo do Docker da máquina host para as variáveis de ambiente do Docker
+  //Tambem cria o DEV_ROOT_DIR
+  "initializeCommand": "echo HOST_DOCKER_GROUP_ID=$(getent group docker | cut -d: -f3)'\n'DEV_ROOT_DIR=$(pwd) > .devcontainer/.env",
+  "settings": {},
   "extensions": [
-	"dotjoshjohnson.xml",
-	"redhat.vscode-yaml",
-	"visualstudioexptteam.vscodeintellicode",
-	"albert.tabout",
-	"esbenp.prettier-vscode",
-	"eamodio.gitlens",
-	"dbaeumer.vscode-eslint",
-	"ms-azuretools.vscode-docker",
-	"streetsidesoftware.code-spell-checker",
-	"streetsidesoftware.code-spell-checker-portuguese-brazilian"
-],
-  "workspaceFolder": "/home/developer/workspace",
-  "postStartCommand": "npm i"
+    "ms-azuretools.vscode-docker",
+    "streetsidesoftware.code-spell-checker-portuguese-brazilian",
+    "dbaeumer.vscode-eslint",
+    "prisma.prisma"
+  ],
+  "workspaceFolder": "/home/developer/dev",
+  "postStartCommand": "npm install -g npm && npm i"
 }
