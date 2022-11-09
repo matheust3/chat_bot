@@ -14,7 +14,7 @@
     "test": "node --experimental-vm-modules node_modules/.bin/jest --passWithNoTests --silent --noStackTrace --runInBand",
     "test:verbose": "node --experimental-vm-modules node_modules/.bin/jest --passWithNoTests --runInBand",
     "test:unit": "npm test -- --watch -c jest-unit.config.js",
-    "test:integration": "npm test -- -c jest-integration.config.js",
+    "test:integration": "npm test -- --watch -c jest-integration.config.js",
     "test:staged": "npm test -- --findRelatedTests",
     "test:ci": "npm test -- --coverage --detectOpenHandles"
   },
@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "chmodr": "^1.2.0",
+    "fast-glob": "^3.2.12",
     "file-type": "^18.0.0",
     "lokijs": "^1.5.12",
     "npm": "^8.1.3",
