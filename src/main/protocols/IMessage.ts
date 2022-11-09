@@ -1,3 +1,5 @@
 export interface IMessage {
-  body: string
+  readonly body: string
+  readonly isCommand: boolean
+  reply: (body: string) => Promise<IMessage>
 }

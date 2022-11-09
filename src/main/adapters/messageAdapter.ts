@@ -3,6 +3,11 @@ import { IMessage } from '../protocols/IMessage'
 
 export const messageAdapter = (message: Message): IMessage => {
   return {
-    body: message.body
+    body: message.body,
+    isCommand: message.body.startsWith('#'),
+    reply: async (body: string): Promise<IMessage> => {
+      const response = await message.reply(body)
+      return messageAdapter(response)
+    }
   }
 }

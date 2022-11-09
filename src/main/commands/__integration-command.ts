@@ -1,5 +1,7 @@
 import { IMessage } from '../protocols/IMessage'
 
 export default async (message: IMessage): Promise<void> => {
-  message.body = 'edited'
+  if (process.env.NODE_ENV === 'test') {
+    await message.reply('edited')
+  }
 }

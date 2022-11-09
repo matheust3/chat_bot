@@ -38,6 +38,6 @@ describe('commands.test.ts - commands', () => {
     //! Act
     await sut(message)
     //! Assert
-    expect(message.body).toBe('edited')
+    expect(message.reply).toHaveBeenCalledWith('edited')
   })
 })

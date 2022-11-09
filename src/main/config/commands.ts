@@ -6,7 +6,7 @@ import { ICommand } from '../protocols/ICommand'
 export default async (): Promise<ICommand[]> => {
   const commands: ICommand[] = []
   // Carrega todos os arquivos de rotas
-  const files = fg.sync('./../**/commands/**command.*', { cwd: __dirname })
+  const files = fg.sync('./../**/commands/**/**command.*', { cwd: __dirname })
 
   for (const file of files) {
     if (!file.endsWith('.test.ts')) {

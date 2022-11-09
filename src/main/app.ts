@@ -21,6 +21,8 @@ import { LokiAntiFloodDatasource } from '../infra/loki-anti-flood-datasource'
 import { LokiBanLogsDatasource } from '../infra/loki-ban-logs-datasource'
 import { SaveGhostDataFileDatasource } from '../infra/save-ghost-data-file-datasource'
 import { ChatBot } from '../presentation/chat-bot'
+import { messageAdapter } from './adapters/messageAdapter'
+import commands from './config/commands'
 
 const createStaticStickerDatasource = new CreateStaticStickerDatasourceImpl()
 const createAnimatedStickerDatasource = new CreateAnimatedStickerDatasourceImpl()
@@ -72,33 +74,42 @@ const antiSpamRepository = new AntiSpamRepositoryImpl(antiFloodDatasource)
 
 const client = new Client({ puppeteer: { headless: true, args: ['--no-sandbox'] } })
 const chatBot = new ChatBot(client, stickerRepository, databaseRepository, chatRepository, ghostRepository, antiSpamRepository, banRepository)
+
+// Le os commandos
+commands().then((commands) => {
 // Print o qrcode no console
-client.on('qr', (qr) => {
-  qrCode.generate(qr, { small: true })
-})
-// Quando a sessão eh autenticada
-client.on('authenticated', () => {
-  console.log('AUTHENTICATED')
-})
-// Quando ha falha na sessão
-client.on('auth_failure', msg => {
+  client.on('qr', (qr) => {
+    qrCode.generate(qr, { small: true })
+  })
+  // Quando a sessão eh autenticada
+  client.on('authenticated', () => {
+    console.log('AUTHENTICATED')
+  })
+  // Quando ha falha na sessão
+  client.on('auth_failure', msg => {
   // Fired if session restore was unsuccessfully
-  console.error('AUTHENTICATION FAILURE', msg)
-})
-// Quando esta pronto
-client.on('ready', () => {
-  client.getWWebVersion().then(version => console.log('READY - WhatApp Web version:', version)).catch(e => console.error('Erro ao pegar a versão -> ', e))
-})
+    console.error('AUTHENTICATION FAILURE', msg)
+  })
+  // Quando esta pronto
+  client.on('ready', () => {
+    client.getWWebVersion().then(version => console.log('READY - WhatApp Web version:', version)).catch(e => console.error('Erro ao pegar a versão -> ', e))
+  })
 
-// Quando recebe qualquer mensagem
-client.on('message_create', msg => {
-  chatBot.onAnyMessage(msg).catch((error) => console.error('Erro na função onAnyMessage => ', error))
-})
+  // Quando recebe qualquer mensagem
+  client.on('message_create', msg => {
+    chatBot.onAnyMessage(msg).catch((error) => console.error('Erro na função onAnyMessage => ', error))
+    const message = messageAdapter(msg)
+    if (message.isCommand) {
+      commands.forEach((cmd) => {
+        cmd(message).catch((error) => console.error('Erro na função command => ', error))
+      })
+    }
+  })
 
-//
-// Inicia o bot
-//
-
-client.initialize().then((_) => {
-  console.log('Iniciado')
-}).catch((error) => console.error('Erro ao iniciar o cliente', error))
+  //
+  // Inicia o bot
+  //
+  client.initialize().then((_) => {
+    console.log('Iniciado')
+  }).catch((error) => console.error('Erro ao iniciar o cliente', error))
+}).catch((error) => console.error('Erro ao ler os comandos', error))
