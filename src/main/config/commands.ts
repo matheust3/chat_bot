@@ -1,10 +1,10 @@
 
 import fg from 'fast-glob'
-import { ICommand } from '../protocols/ICommand'
+import { ICommandHandler } from '../protocols/ICommandHandler'
 
 // Função responsável por carregar todos os arquivos de rotas
-export default async (): Promise<ICommand[]> => {
-  const commands: ICommand[] = []
+export default async (): Promise<ICommandHandler[]> => {
+  const commands: ICommandHandler[] = []
   // Carrega todos os arquivos de rotas
   const files = fg.sync('./../**/commands/**/**command.*', { cwd: __dirname })
 

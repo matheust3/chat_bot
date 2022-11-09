@@ -1,16 +1,16 @@
 import { mock, MockProxy } from 'jest-mock-extended'
 import command from '../commands/__integration-command'
-import { ICommand, IMessage } from '../protocols'
+import { ICommandHandler, IMessage } from '../protocols'
 import commands from './commands'
 
 interface SutTypes {
-  sut: ICommand
+  sut: ICommandHandler
   message: MockProxy<IMessage> & IMessage
 }
 
 const makeSut = (): SutTypes => {
   const message = mock<IMessage>({ body: '__integration-command' })
-  const sut: ICommand = command
+  const sut: ICommandHandler = command
   return {
     sut,
     message
