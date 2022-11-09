@@ -1,26 +1,26 @@
-import { Client } from 'whatsapp-web.js'
-import { StickerRepositoryImpl } from '../data/repositories/sticker-repository-impl'
-import { CheckDataTypeDatasourceImpl } from '../infra/check-data-type-datasource-impl'
-import { CreateStaticStickerDatasourceImpl } from '../infra/create-static-sticker-datasource-impl'
-import { CreateAnimatedStickerDatasourceImpl } from '../infra/create-animated-sticker-datasource-impl'
-import { ChatBot } from '../presentation/chat-bot'
-import { promisify } from 'util'
 import child_process from 'child_process'
 import fs from 'fs'
-import qrCode from 'qrcode-terminal'
-import { ChatRepositoryImpl } from '../data/repositories/chat-repository-impl'
-import { DatabaseRepositoryImpl } from '../data/repositories/database-repository-impl'
-import { LoadAuthorizedChatsFileDatasource } from '../infra/database/load-authorized-chats-file-datasource'
-import { AddChatToAuthorizedChatsFileDatasource } from '../infra/database/add-chat-to-authorized-chats-file-datasource'
-import { GhostRepositoryImpl } from '../data/repositories/ghost-repository-impl'
-import { SaveGhostDataFileDatasource } from '../infra/save-ghost-data-file-datasource'
-import { LoadGhostDataFileDatasource } from '../infra/load-ghost-data-file-datasource'
-import { BanRepositoryImpl } from '../data/repositories/ban-repository-impl'
-import { LokiBanLogsDatasource } from '../infra/loki-ban-logs-datasource'
 import LokiJs from 'lokijs'
 import path from 'path'
+import qrCode from 'qrcode-terminal'
+import { promisify } from 'util'
+import { Client } from 'whatsapp-web.js'
 import { AntiSpamRepositoryImpl } from '../data/repositories/anti-spam-repository-impl'
+import { BanRepositoryImpl } from '../data/repositories/ban-repository-impl'
+import { ChatRepositoryImpl } from '../data/repositories/chat-repository-impl'
+import { DatabaseRepositoryImpl } from '../data/repositories/database-repository-impl'
+import { GhostRepositoryImpl } from '../data/repositories/ghost-repository-impl'
+import { StickerRepositoryImpl } from '../data/repositories/sticker-repository-impl'
+import { CheckDataTypeDatasourceImpl } from '../infra/check-data-type-datasource-impl'
+import { CreateAnimatedStickerDatasourceImpl } from '../infra/create-animated-sticker-datasource-impl'
+import { CreateStaticStickerDatasourceImpl } from '../infra/create-static-sticker-datasource-impl'
+import { AddChatToAuthorizedChatsFileDatasource } from '../infra/database/add-chat-to-authorized-chats-file-datasource'
+import { LoadAuthorizedChatsFileDatasource } from '../infra/database/load-authorized-chats-file-datasource'
+import { LoadGhostDataFileDatasource } from '../infra/load-ghost-data-file-datasource'
 import { LokiAntiFloodDatasource } from '../infra/loki-anti-flood-datasource'
+import { LokiBanLogsDatasource } from '../infra/loki-ban-logs-datasource'
+import { SaveGhostDataFileDatasource } from '../infra/save-ghost-data-file-datasource'
+import { ChatBot } from '../presentation/chat-bot'
 
 const createStaticStickerDatasource = new CreateStaticStickerDatasourceImpl()
 const createAnimatedStickerDatasource = new CreateAnimatedStickerDatasourceImpl()
@@ -70,7 +70,7 @@ const ghostRepository = new GhostRepositoryImpl(loadGhostDataFileDatasource, sav
 const chatRepository = new ChatRepositoryImpl()
 const antiSpamRepository = new AntiSpamRepositoryImpl(antiFloodDatasource)
 
-const client = new Client({ puppeteer: { headless: true, args: ['--no-sandbox'] }, clientId: 'sticker' })
+const client = new Client({ puppeteer: { headless: true, args: ['--no-sandbox'] } })
 const chatBot = new ChatBot(client, stickerRepository, databaseRepository, chatRepository, ghostRepository, antiSpamRepository, banRepository)
 // Print o qrcode no console
 client.on('qr', (qr) => {

@@ -8,3 +8,4 @@ src/js/**
 src/static/**
 src/xml/**
 scripts/**
+jest-integration.config.js
