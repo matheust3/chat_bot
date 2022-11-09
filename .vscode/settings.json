@@ -1,5 +1,5 @@
 {
-  "cSpell.words": [
+	"cSpell.words": [
 		"bbox",
 		"ffprobe",
 		"floodando",
@@ -13,5 +13,9 @@
 		"webp",
 		"whatsapp"
 	],
-	"cSpell.language": "en,pt,pt-BR"
+	"cSpell.language": "en,pt,pt-BR",
+	"eslint.codeActionsOnSave.mode": "all",
+	"eslint.run": "onType",
+	"editor.formatOnSave": false,
+	"editor.formatOnSaveMode": "file"
 }
