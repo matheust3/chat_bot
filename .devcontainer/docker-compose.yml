@@ -11,6 +11,8 @@ services:
       args:
         - HOST_DOCKER_GROUP_ID=${HOST_DOCKER_GROUP_ID}
     restart: on-failure
+    environment:
+      - DEV_ROOT_DIR=${DEV_ROOT_DIR}
     volumes:
       - type: bind
         source: ..

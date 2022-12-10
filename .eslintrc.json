@@ -8,9 +8,5 @@
   ],
   "parserOptions": {
     "project": "./tsconfig.eslint.json"
-  },
-  "rules": {
-    "space-before-function-paren": "off",
-    "@typescript-eslint/consistent-type-assertions": "off"
   }
 }
