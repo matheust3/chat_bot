@@ -1,1 +1,2 @@
-# Chat bot in nodejs using sulla
+# A simple Whatsapp Sticker chatBot creator
+
