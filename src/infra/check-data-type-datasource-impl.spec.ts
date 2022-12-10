@@ -1,11 +1,11 @@
 
-import { CheckDataTypeDatasource } from '../data/datasources/check-data-type-datasource'
-import { CheckDataTypeDatasourceImpl } from './check-data-type-datasource-impl'
 import fs from 'fs'
-import { DataType } from '../domain/models/data-types'
 import path from 'path'
+import { CheckDataTypeDatasource } from '../data/datasources/check-data-type-datasource'
+import { DataType } from '../domain/models/data-types'
+import { CheckDataTypeDatasourceImpl } from './check-data-type-datasource-impl'
 
-interface SutTypes{
+interface SutTypes {
   datasource: CheckDataTypeDatasource
 }
 

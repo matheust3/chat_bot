@@ -1,30 +1,26 @@
 version: "3.5"
-networks:
-  dev_net:
-    name: dev_chat_bot_net
-    ipam:
-      driver: default
-      config:
-        - subnet: "170.30.238.0/24"
 services:
-  dev_chat_bot:
-    privileged: true
+  chat_bot_dev_container:
+    privileged: true # Para invocar o CLI docker
     user: developer
-    container_name: dev_chat_bot
-    image: dev_chat_bot
-    build: 
+    container_name: chat_bot_dev_container
+    image: chat_bot_dev_container
+    build:
       context: ..
-      dockerfile: .devcontainer/Dockerfile
+      dockerfile: ./.devcontainer/Dockerfile
+      args:
+        - HOST_DOCKER_GROUP_ID=${HOST_DOCKER_GROUP_ID}
     restart: on-failure
+    environment:
+      - DEV_ROOT_DIR=${DEV_ROOT_DIR}
     volumes:
       - type: bind
         source: ..
-        target: /home/developer/workspace
+        target: /home/developer/dev
+      #Para invocar o CLI do docker
       - type: bind
         source: /var/run/docker.sock
         target: /var/run/docker.sock
-    networks:
-      dev_net:
-        ipv4_address: 170.30.238.2
-    #quando esse comando acabar o container fecha
+    network_mode: 'host'
+    #Quando essa instrução terminar o container fecha
     command: /bin/sh -c "while sleep 1000; do :; done"
