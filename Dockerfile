@@ -19,7 +19,7 @@ RUN mkdir -p /home/matheus/Downloads \
 RUN newgrp matheus
 USER matheus
 WORKDIR /home/matheus
-# install snap core
-RUN wget https://nodejs.org/dist/v14.15.1/node-v14.15.1-linux-x64.tar.xz -O node.tar.xz
+# Instala o node
+RUN wget https://nodejs.org/dist/v16.13.2/node-v16.13.2-linux-x64.tar.xz -O node.tar.xz
 RUN tar -xf node.tar.xz
-ENV PATH "$PATH:/home/matheus/node-v14.15.1-linux-x64/bin"
+ENV PATH "$PATH:/home/matheus/node-v16.13.2-linux-x64/bin"
