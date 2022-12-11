@@ -11,15 +11,15 @@ RUN apt update && apt install -y netselect-apt
 # Prerequisites
 RUN apt update && apt upgrade -y && apt install -y curl git wget tree chromium imagemagick ffmpeg xz-utils python3.7
 # Add user so we don't need --no-sandbox.
-RUN groupadd -r matheus
-RUN groupmod -g 1000 matheus 
-RUN useradd -ms /bin/bash -g matheus -G audio,video matheus 
-RUN mkdir -p /home/matheus/Downloads \
-  && chown -R matheus:matheus /home/matheus 
-RUN newgrp matheus
-USER matheus
-WORKDIR /home/matheus
+RUN groupadd -r developer
+RUN groupmod -g 1000 developer 
+RUN useradd -ms /bin/bash -g developer -G audio,video developer 
+RUN mkdir -p /home/developer/Downloads \
+  && chown -R developer:developer /home/developer 
+RUN newgrp developer
+USER developer
+WORKDIR /home/developer
 # Instala o node
-RUN wget https://nodejs.org/dist/v16.13.2/node-v16.13.2-linux-x64.tar.xz -O node.tar.xz
+RUN wget https://nodejs.org/dist/v18.12.1/node-v18.12.1-linux-x64.tar.xz -O node.tar.xz
 RUN tar -xf node.tar.xz
-ENV PATH "$PATH:/home/matheus/node-v16.13.2-linux-x64/bin"
+ENV PATH "$PATH:/home/developer/node-v18.12.1-linux-x64/bin"
