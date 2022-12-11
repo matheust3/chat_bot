@@ -14,10 +14,10 @@ services:
     restart: always
     volumes:
       - ${DEV_ROOT_DIR}/dist:/home/developer/dist
-      - ${DEV_ROOT_DIR}/tokens:/home/developer/tokens
       - ${DEV_ROOT_DIR}/database-files:/home/developer/database-files
       - ${DEV_ROOT_DIR}/package.json:/home/developer/package.json
-    command: bash -c "npm install --only=prod && ls -l .. && npm run start"
+      - ${DEV_ROOT_DIR}/package-lock.json:/home/developer/package-lock.json
+    command: bash -c "npm i -g npm && npm install --omit=dev && ls -l .. && npm run start"
     networks:
       app_net:
         ipv4_address: 165.21.238.3

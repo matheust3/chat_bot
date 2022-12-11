@@ -48,6 +48,6 @@
     "npm": "^8.1.3",
     "qrcode-terminal": "^0.12.0",
     "uuid": "^9.0.0",
-    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js"
+    "whatsapp-web.js": "github:matheust3/whatsapp-web.js"
   }
 }
