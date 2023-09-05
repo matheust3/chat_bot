@@ -20,6 +20,6 @@ RUN newgrp developer
 USER developer
 WORKDIR /home/developer
 # Instala o node
-RUN wget https://nodejs.org/dist/v18.12.1/node-v18.12.1-linux-x64.tar.xz -O node.tar.xz
+RUN wget https://nodejs.org/dist/v18.17.0/node-v18.17.0-linux-x64.tar.xz -O node.tar.xz
 RUN tar -xf node.tar.xz
-ENV PATH "$PATH:/home/developer/node-v18.12.1-linux-x64/bin"
+ENV PATH "$PATH:/home/developer/node-v18.17.0-linux-x64/bin"
