@@ -185,7 +185,7 @@ export class ChatBot {
       if (result?.valid) {
         const media = MessageMedia.fromFilePath(result.path)
         try {
-          await this._client.sendMessage(chat.id._serialized, '', { media: media, sendMediaAsSticker: true })
+          await this._client.sendMessage(chat.id._serialized, '', { media, sendMediaAsSticker: true })
         } catch (err) {
           await message.reply('Nao consegui enviar sua figurinha 😓 - Tente diminuir o tamanho do arquivo (em MB)')
           console.error(err)
