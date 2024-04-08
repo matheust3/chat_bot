@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
     "outDir": "dist",
-    "module": "CommonJS",
+    "module": "NodeNext",
     "target": "ES6",
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "sourceMap": false,
     "strictNullChecks": true,
     "allowJs": true,
+    "skipLibCheck": true
   },
   "include": ["src"],
   "exclude": ["**/*.spec.ts", "**/*.test.ts"]

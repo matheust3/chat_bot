@@ -72,7 +72,13 @@ const ghostRepository = new GhostRepositoryImpl(loadGhostDataFileDatasource, sav
 const chatRepository = new ChatRepositoryImpl()
 const antiSpamRepository = new AntiSpamRepositoryImpl(antiFloodDatasource)
 
-const client = new Client({ puppeteer: { headless: true, args: ['--no-sandbox'] } })
+const client = new Client({
+  puppeteer: { headless: true, args: ['--no-sandbox'], executablePath: '/usr/bin/google-chrome-stable' },
+  webVersionCache: {
+    type: 'remote',
+    remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2409.0.html'
+  }
+})
 const chatBot = new ChatBot(client, stickerRepository, databaseRepository, chatRepository, ghostRepository, antiSpamRepository, banRepository)
 
 // Le os commandos

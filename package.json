@@ -1,6 +1,6 @@
 {
   "name": "chat_bot",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -8,8 +8,8 @@
     "start": "node dist/main/app.js",
     "debug": "node --inspect=0.0.0.0:9222 --nolazy dist/main/app.js",
     "build": "rimraf dist && tsc && node scripts/copyfiles.js",
-    "up": "npm run build && docker-compose up ",
-    "down": "docker-compose down",
+    "up": "npm run build && docker compose up ",
+    "down": "docker compose down",
     "restart": "npm run down && npm run up",
     "test": "node --experimental-vm-modules node_modules/.bin/jest --passWithNoTests --silent --noStackTrace --runInBand",
     "test:verbose": "node --experimental-vm-modules node_modules/.bin/jest --passWithNoTests --runInBand",
@@ -48,6 +48,6 @@
     "npm": "^8.1.3",
     "qrcode-terminal": "^0.12.0",
     "uuid": "^9.0.0",
-    "whatsapp-web.js": "github:brunox64/whatsapp-web.js#patch-1"
+    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#v1.23.0"
   }
 }
