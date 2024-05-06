@@ -4,7 +4,7 @@ services:
     image: chat_bot
     build: .
     restart: always
-    user: developer
+    user: ubuntu
     volumes:
       - ${DEV_ROOT_DIR}/dist:/home/developer/dist
       - ${DEV_ROOT_DIR}/database-files:/home/developer/database-files

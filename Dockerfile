@@ -6,9 +6,8 @@ RUN apt update && apt install -y ffmpeg curl git wget tree imagemagick git-flow 
 RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 RUN apt install ./google-chrome-stable_current_amd64.deb -y
 # Usuario de desenvolvimento
-# Cria o usuário developer
-RUN useradd -ms /bin/bash developer
-USER developer
+USER ubuntu
+# Cria a pasta developer
 WORKDIR /home/developer
 # Instala o node
 RUN wget https://nodejs.org/dist/v20.12.1/node-v20.12.1-linux-x64.tar.xz -O node.tar.xz
