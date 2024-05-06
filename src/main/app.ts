@@ -4,7 +4,7 @@ import LokiJs from 'lokijs'
 import path from 'path'
 import qrCode from 'qrcode-terminal'
 import { promisify } from 'util'
-import { Client } from 'whatsapp-web.js'
+import { Client, LocalAuth } from 'whatsapp-web.js'
 import { AntiSpamRepositoryImpl } from '../data/repositories/anti-spam-repository-impl'
 import { BanRepositoryImpl } from '../data/repositories/ban-repository-impl'
 import { ChatRepositoryImpl } from '../data/repositories/chat-repository-impl'
@@ -73,6 +73,10 @@ const chatRepository = new ChatRepositoryImpl()
 const antiSpamRepository = new AntiSpamRepositoryImpl(antiFloodDatasource)
 
 const client = new Client({
+  authStrategy: new LocalAuth({
+    clientId: 'stickerBot',
+    dataPath: path.join(__dirname, '/../../database-files')
+  }),
   puppeteer: { headless: true, args: ['--no-sandbox'], executablePath: '/usr/bin/google-chrome-stable' },
   webVersionCache: {
     type: 'remote',
