@@ -17,6 +17,9 @@ services:
       - type: bind
         source: ..
         target: /home/developer/dev
+      - type: bind
+        source: ~/.ssh
+        target: /home/ubuntu/.ssh
       #Para invocar o CLI do docker
       - type: bind
         source: /var/run/docker.sock
