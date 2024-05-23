@@ -2,7 +2,7 @@ version: "3.5"
 services:
   chat_bot_dev_container:
     privileged: true # Para invocar o CLI docker
-    user: developer
+    user: ubuntu
     container_name: chat_bot_dev_container
     image: chat_bot_dev_container
     build:
