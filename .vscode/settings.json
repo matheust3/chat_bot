@@ -11,7 +11,8 @@
 		"Postgres",
 		"qrcode",
 		"webp",
-		"whatsapp"
+		"whatsapp",
+		"wppconnect"
 	],
 	"cSpell.language": "en,pt,pt-BR",
 	"eslint.codeActionsOnSave.mode": "all",
