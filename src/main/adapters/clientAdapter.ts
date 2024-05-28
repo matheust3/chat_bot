@@ -13,7 +13,11 @@ export const clientAdapter = (client: Whatsapp): IClient => {
       if (type === 'static') {
         await client.sendImageAsSticker(to, pathOrBase64)
       } else {
-        await client.sendImageAsStickerGif(to, pathOrBase64)
+        const res = await client.sendImageAsStickerGif(to, pathOrBase64)
+        const msg = await client.getMessageById(res.id)
+        if (msg?.mediaData?.mediaStage === 'ERROR_TOO_LARGE') {
+          throw new Error('ERROR_TOO_LARGE')
+        }
       }
     },
     sendText: async (to: string, content: string, op?: { quotedMsg: string }) => {
