@@ -21,10 +21,12 @@ export class CreateAnimatedStickerDatasourceImpl implements CreateAnimatedSticke
       const mediaData = JSON.parse(stdout)
       let height: number
       let width: number
+      let duration: number
       if (mediaData.streams.length > 0) {
         const stream = mediaData.streams.find((value: { codec_type: string }) => (value.codec_type).includes('video'))
         height = stream.height
         width = stream.width
+        duration = stream.duration
         if (stream.tags?.rotate !== undefined && (Math.abs(stream.tags.rotate) === 90 || Math.abs(stream.tags.rotate) === 270)) {
           height = stream.width
           width = stream.height
@@ -44,7 +46,10 @@ export class CreateAnimatedStickerDatasourceImpl implements CreateAnimatedSticke
       const cropSize = Math.min(width, height)
       const offsetX = (width - cropSize) / 2
       const offsetY = (height - cropSize) / 2
-      const command = `ffmpeg  -i ${__dirname}/../cache/${uuid} -vf "crop=${cropSize}:${cropSize}:${offsetX}:${offsetY},scale=512:512,fps=10" -loop 0 ${__dirname}/../cache/${uuid}.webp -hide_banner -loglevel error`
+      const minTime = Math.min(4, duration)
+      const acceleration = Math.ceil(duration / minTime)
+
+      const command = `ffmpeg  -i ${__dirname}/../cache/${uuid} -compression_level 6  -vf "crop=${cropSize}:${cropSize}:${offsetX}:${offsetY},scale=512:512,fps=8,setpts=PTS/${acceleration}" -loop 0 ${__dirname}/../cache/${uuid}.webp -hide_banner -loglevel error`
       const { stderr } = await exec(command)
       const err = stderr
       if (err !== '') {
