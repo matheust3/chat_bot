@@ -1,7 +1,7 @@
 FROM ubuntu:latest
 # Pré requisitos
 RUN apt update && apt upgrade -y
-RUN apt update && apt install -y ffmpeg curl git wget tree imagemagick git-flow vim nano xz-utils
+RUN apt update && apt install -y ffmpeg curl git wget tree imagemagick vim nano xz-utils
 # Instala o google chrome
 RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 RUN apt install ./google-chrome-stable_current_amd64.deb -y
