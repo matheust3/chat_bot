@@ -22,9 +22,9 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
   if (message.body?.startsWith('#') || message.caption?.startsWith('#') === true) {
     // Get the command without the '#'
     if (message.body?.startsWith('#')) {
-      command = message.body.slice(1)
+      command = message.body.slice(1).toLowerCase()
     } else {
-      command = message.caption?.slice(1)
+      command = message.caption?.slice(1).toLocaleLowerCase()
     }
   }
 

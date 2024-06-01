@@ -5,6 +5,7 @@ import { StickerRepositoryImpl } from '../../data/repositories/sticker-repositor
 import { CreateStaticStickerDatasourceImpl } from '../../infra/create-static-sticker-datasource-impl'
 import { CheckDataTypeDatasourceImpl } from '../../infra/check-data-type-datasource-impl'
 import { CreateAnimatedStickerDatasourceImpl } from '../../infra/create-animated-sticker-datasource-impl'
+import { Sticker } from '../../domain/models/sticker'
 
 const createStaticStickerDatasource = new CreateStaticStickerDatasourceImpl()
 const stickerRepository = new StickerRepositoryImpl(
@@ -26,7 +27,23 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
     }
 
     const mediaBuffer = await client.downloadFile(mediaMsgId)
-    const sticker = await stickerRepository.createSticker(mediaBuffer.toString('base64'))
-    await client.sendImageAsSticker(message.groupId ?? message.from, sticker.path, sticker.type, { quotedMsg: message.id })
+    let sticker: Sticker
+    try {
+      sticker = await stickerRepository.createSticker(mediaBuffer.toString('base64'))
+    } catch (e) {
+      console.error(e)
+      await client.sendText(message.groupId ?? message.from, 'Encontrei um erro ao criar a figurinha', { quotedMsg: message.id })
+      return
+    }
+    try {
+      await client.sendImageAsSticker(message.groupId ?? message.from, sticker.path, sticker.type, { quotedMsg: message.id })
+    } catch (e) {
+      console.error(e)
+      let msg = 'Encontrei um erro ao enviar a figurinha'
+      if (e.message === 'ERROR_TOO_LARGE') {
+        msg = 'A figurinha é muito grande para ser enviada'
+      }
+      await client.sendText(message.groupId ?? message.from, msg, { quotedMsg: message.id })
+    }
   }
 }
