@@ -24,6 +24,10 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
     const completeCommand = message.body?.startsWith('#') ? message.body.slice(1).toLocaleLowerCase() : message.caption?.slice(1).toLocaleLowerCase()
     if (completeCommand !== undefined) {
       const args = completeCommand.split('-')
+      // trim the args
+      for (let i = 0; i < args.length; i++) {
+        args[i] = args[i].trim()
+      }
       command = {
         command: args[0],
         args: args.slice(1)
