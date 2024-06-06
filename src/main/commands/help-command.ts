@@ -2,15 +2,16 @@ import { IClient, IMessage } from '../protocols'
 
 export default async (message: IMessage, client: IClient): Promise<void> => {
   if (message.command?.command === 'help' || message.command?.command === 'ajuda') {
-    const text = `💬 *Comandos de Ajuda* 💬
+    const text = `💬 *Comandos de Disponíveis* 💬
 
-    🔹 \`#help\` -> Esta mensagem de ajuda
-    🔹 \`#ajuda\` -> Esta mensagem de ajuda
+➖ \`#help\` *->* Esta mensagem de ajuda
+➖ \`#ajuda\` *->* Esta mensagem de ajuda
     
-    🔹 \`#sticker\` -> Faz uma figurinha quadrada
-    🔹 \`#sticker -o\` -> Faz uma figurinha com a proporção original
+➖ \`#sticker [argumentos]\` *->* Faz figurinhas
+       *Argumentos:*
+       \`-o\` *->* Não recorta a figurinha
     
-    🔹 \`#link\` -> Retorna o link do grupo`
+➖ \`#link\` *->* Retorna o link do grupo`
 
     await client.sendText(message.groupId ?? message.from, text, { quotedMsg: message.id })
   }
