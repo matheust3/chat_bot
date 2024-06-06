@@ -27,7 +27,7 @@ export class StickerRepositoryImpl implements StickerRepository {
         return { path: '', type: 'static', valid: false }
       }
     } else if (dataType === 'stickerAnimated') {
-      const result = await this._createAnimatedStickerDatasource.createSticker(dataBuffer)
+      const result = await this._createAnimatedStickerDatasource.createSticker(dataBuffer, resize)
       if (result !== null) {
         return { path: result, type: 'animated', valid: true }
       } else {

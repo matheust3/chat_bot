@@ -32,7 +32,6 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
         command: args[0],
         args: args.slice(1)
       }
-      console.log(command)
     }
   }
 

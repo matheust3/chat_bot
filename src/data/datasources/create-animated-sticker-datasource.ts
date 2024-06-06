@@ -1,3 +1,3 @@
 export interface CreateAnimatedStickerDatasource {
-  createSticker: (data: Buffer) => Promise<string | null>
+  createSticker: (data: Buffer, resize: boolean) => Promise<string | null>
 }

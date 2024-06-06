@@ -15,7 +15,7 @@ const stickerRepository = new StickerRepositoryImpl(
 )
 
 export default async (message: IMessage, client: IClient): Promise<void> => {
-  if (message.command?.command === 'sticker' && message.fromMe) {
+  if (message.command?.command === 'sticker') {
     let mediaMsgId = ''
     if (message.type === IMessageType.IMAGE || message.type === IMessageType.VIDEO) {
       mediaMsgId = message.id
