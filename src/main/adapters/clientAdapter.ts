@@ -9,6 +9,9 @@ export const clientAdapter = (client: Whatsapp): IClient => {
       // Faz o download do arquivo
       return await client.decryptFile(message)
     },
+    getGroupInviteLink: async (chatId: string) => {
+      return await client.getGroupInviteLink(chatId)
+    },
     sendImageAsSticker: async (to: string, pathOrBase64: string, type: 'static' | 'animated', op?: { quotedMsg: string }) => {
       if (type === 'static') {
         await client.sendImageAsSticker(to, pathOrBase64)
