@@ -16,18 +16,18 @@ export class StickerRepositoryImpl implements StickerRepository {
     this._createAnimatedStickerDatasource = createAnimatedStickerDatasource
   }
 
-  async createSticker (data: string): Promise<Sticker> {
+  async createSticker (data: string, resize: boolean): Promise<Sticker> {
     const dataBuffer = Buffer.from(data, 'base64')
     const dataType = await this._checkDataTypeDatasource.fromBuffer(dataBuffer)
     if (dataType === 'staticSticker') {
-      const result = await this._createStaticStickerDatasource.createSticker(dataBuffer)
+      const result = await this._createStaticStickerDatasource.createSticker(dataBuffer, resize)
       if (result !== undefined && result !== null) {
         return { path: result, type: 'static', valid: true }
       } else {
         return { path: '', type: 'static', valid: false }
       }
     } else if (dataType === 'stickerAnimated') {
-      const result = await this._createAnimatedStickerDatasource.createSticker(dataBuffer)
+      const result = await this._createAnimatedStickerDatasource.createSticker(dataBuffer, resize)
       if (result !== null) {
         return { path: result, type: 'animated', valid: true }
       } else {

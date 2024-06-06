@@ -1,5 +1,5 @@
 import { Message } from '@wppconnect-team/wppconnect'
-import { IMessage } from '../protocols/IMessage'
+import { ICommand, IMessage } from '../protocols/IMessage'
 import { IMessageType } from '../protocols/IMessageType'
 import { IQuotedMsg } from '../protocols/IQuotedMsg'
 
@@ -14,17 +14,24 @@ interface IOriginQuotedMsg {
 
 export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: string, quotedMsg?: IOriginQuotedMsg }): IMessage => {
   let groupId: string | undefined
-  let command: string | undefined
+  let command: ICommand | undefined
   let messageType: IMessageType = IMessageType.CHAT
   let quotedMsg: IQuotedMsg | undefined
 
   // Check if the message is a command
   if (message.body?.startsWith('#') || message.caption?.startsWith('#') === true) {
     // Get the command without the '#'
-    if (message.body?.startsWith('#')) {
-      command = message.body.slice(1).toLowerCase()
-    } else {
-      command = message.caption?.slice(1).toLocaleLowerCase()
+    const completeCommand = message.body?.startsWith('#') ? message.body.slice(1).toLocaleLowerCase() : message.caption?.slice(1).toLocaleLowerCase()
+    if (completeCommand !== undefined) {
+      const args = completeCommand.split('-')
+      // trim the args
+      for (let i = 0; i < args.length; i++) {
+        args[i] = args[i].trim()
+      }
+      command = {
+        command: args[0],
+        args: args.slice(1)
+      }
     }
   }
 

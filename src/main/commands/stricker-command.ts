@@ -15,7 +15,7 @@ const stickerRepository = new StickerRepositoryImpl(
 )
 
 export default async (message: IMessage, client: IClient): Promise<void> => {
-  if (message.command === 'sticker') {
+  if (message.command?.command === 'sticker') {
     let mediaMsgId = ''
     if (message.type === IMessageType.IMAGE || message.type === IMessageType.VIDEO) {
       mediaMsgId = message.id
@@ -29,7 +29,7 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
     const mediaBuffer = await client.downloadFile(mediaMsgId)
     let sticker: Sticker
     try {
-      sticker = await stickerRepository.createSticker(mediaBuffer.toString('base64'))
+      sticker = await stickerRepository.createSticker(mediaBuffer.toString('base64'), !(message.command?.args?.includes('o') ?? true))
     } catch (e) {
       console.error(e)
       await client.sendText(message.groupId ?? message.from, 'Encontrei um erro ao criar a figurinha', { quotedMsg: message.id })
