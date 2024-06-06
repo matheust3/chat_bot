@@ -7,7 +7,7 @@ import child_process from 'child_process'
 import path from 'path'
 
 export class CreateAnimatedStickerDatasourceImpl implements CreateAnimatedStickerDatasource {
-  async createSticker (data: Buffer): Promise<string | null> {
+  async createSticker (data: Buffer, resize: boolean): Promise<string | null> {
     /* istanbul ignore else */
     if (!fs.existsSync(path.join(__dirname, '/../cache'))) {
       fs.mkdirSync(path.join(__dirname, '/../cache'))
@@ -46,10 +46,16 @@ export class CreateAnimatedStickerDatasourceImpl implements CreateAnimatedSticke
       const cropSize = Math.min(width, height)
       const offsetX = (width - cropSize) / 2
       const offsetY = (height - cropSize) / 2
-      const minTime = Math.min(4, duration)
+      const minTime = Math.min(6, duration)
       const acceleration = Math.ceil(duration / minTime)
 
-      const command = `ffmpeg  -i ${__dirname}/../cache/${uuid} -compression_level 6  -vf "crop=${cropSize}:${cropSize}:${offsetX}:${offsetY},scale=512:512,fps=8,setpts=PTS/${acceleration}" -loop 0 ${__dirname}/../cache/${uuid}.webp -hide_banner -loglevel error`
+      let command = ''
+      if (resize) {
+        command = `ffmpeg  -i ${__dirname}/../cache/${uuid} -compression_level 6 -lossless 0 -an -vsync 0 -vcodec libwebp -vf "crop=${cropSize}:${cropSize}:${offsetX}:${offsetY},scale=512:512,fps=8,setpts=PTS/${acceleration}" -loop 0 ${__dirname}/../cache/${uuid}.webp -hide_banner -loglevel error`
+      } else {
+        command = `ffmpeg  -i ${__dirname}/../cache/${uuid} -compression_level 6 -lossless 0 -an -vsync 0 -vcodec libwebp -vf "scale=w=512:h=512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=#00000000,fps=8,setpts=PTS/${acceleration}" -loop 0 -pix_fmt yuva420p ${__dirname}/../cache/${uuid}.webp -hide_banner -loglevel error`
+      }
+
       const { stderr } = await exec(command)
       const err = stderr
       if (err !== '') {
