@@ -18,10 +18,11 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
   let messageType: IMessageType = IMessageType.CHAT
   let quotedMsg: IQuotedMsg | undefined
 
+  const body = message.body ?? ''
   // Check if the message is a command
-  if (message.body?.startsWith('#') || message.caption?.startsWith('#') === true) {
+  if (body.startsWith('#') || message.caption?.startsWith('#') === true) {
     // Get the command without the '#'
-    const completeCommand = message.body?.startsWith('#') ? message.body.slice(1).toLocaleLowerCase() : message.caption?.slice(1).toLocaleLowerCase()
+    const completeCommand = body.startsWith('#') ? body.slice(1).toLocaleLowerCase() : message.caption?.slice(1).toLocaleLowerCase()
     if (completeCommand !== undefined) {
       const args = completeCommand.split('-')
       // trim the args
@@ -37,7 +38,12 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
 
   // Check if the message is from a group
   if (message.isGroupMsg && message.chatId !== undefined) {
-    groupId = message.chatId
+    // check if is string
+    if (typeof message.chatId === 'string') {
+      groupId = message.chatId
+    } else {
+      groupId = message.chatId._serialized
+    }
   }
 
   // Check the message type
