@@ -41,7 +41,7 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "@wppconnect-team/wppconnect": "^1.32.0",
+    "@wppconnect-team/wppconnect": "^1.35.1",
     "chmodr": "^1.2.0",
     "fast-glob": "^3.2.12",
     "file-type": "^18.0.0",
