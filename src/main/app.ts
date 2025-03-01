@@ -5,6 +5,7 @@ import child_process from 'child_process'
 import fs from 'fs'
 import { messageAdapter } from './adapters/messageAdapter'
 import commands from './config/commands'
+import middlewares from './config/middlewares'
 import { clientAdapter } from './adapters/clientAdapter'
 
 // Apaga os arquivos da pasta 'cache' com mais de um dia
@@ -30,6 +31,22 @@ create({
   client.onAnyMessage((message) => {
     const msg = messageAdapter(message)
     const cli = clientAdapter(client)
+
+    let next = true
+    const nextFunction = (): void => {
+      next = true
+    }
+
+    middlewares().then((middlewares) => {
+      if (!next) return
+      next = false
+      middlewares.forEach((middleware) => {
+        middleware(msg, cli, nextFunction).catch((error) => console.error('Erro ao executar o middleware', error))
+      })
+    }).catch((error) => console.error('Erro ao carregar os middlewares', error))
+
+    // Bloqueia a execução dos comandos se o middleware retornar false
+    if (!next) return
 
     if (msg.isCommand) {
       commands().then((commands) => {
