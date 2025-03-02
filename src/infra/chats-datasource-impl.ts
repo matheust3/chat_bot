@@ -29,7 +29,11 @@ export class ChatsDatasourceImpl implements ChatsDatasource {
         if (err != null) {
           reject(err)
         }
-        resolve(rows.map(row => row.chatId))
+        try {
+          resolve(rows.map(row => row.chatId))
+        } catch (err) {
+          reject(err)
+        }
       })
     })
   }
