@@ -49,20 +49,22 @@ chatsDatasource.createTables().then(() => {
             const nextFunction = (): void => {
               next = true
             }
-            if (!next) return
-            next = false
-            middlewares.forEach((middleware) => {
-              middleware(msg, cli, nextFunction).catch((error) => console.error('Erro ao executar o middleware', error))
-            })
+            (async () => {
+              // Executa os middlewares
+              for (const middleware of middlewares) {
+                if (!next) break
+                next = false
+                await middleware(msg, cli, nextFunction)
+              }
+              // Bloqueia a execução dos comandos se o middleware retornar false
+              if (!next) return
 
-            // Bloqueia a execução dos comandos se o middleware retornar false
-            if (!next) return
-
-            if (msg.isCommand) {
-              commands.forEach((command) => {
-                command(msg, cli).catch((error) => console.error('Erro ao executar o comando', error))
-              })
-            }
+              if (msg.isCommand) {
+                for (const command of commands) {
+                  await command(msg, cli)
+                }
+              }
+            })().catch((error) => console.error('Erro ao processar a mensagem', error))
           })
         }).catch((error) => console.error('Erro ao criar o cliente', error))
       }).catch((error) => console.error('Erro ao carregar os comandos', error))
