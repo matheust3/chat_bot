@@ -8,7 +8,7 @@ class Singleton {
   private static instance: ChatsDatasource
 
   constructor (database: Database) {
-    if (Singleton.instance !== undefined) {
+    if (Singleton.instance === undefined) {
       Singleton.instance = new ChatsDatasourceImpl(database)
     }
     return Singleton.instance
