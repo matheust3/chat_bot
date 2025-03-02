@@ -9,7 +9,7 @@ class Singleton {
 
   constructor () {
     if (Singleton.instance === undefined) {
-      const datasource = new FileTopLevelDomainDatasource(path.join(__dirname, '../../assets/top-level-domains.txt'))
+      const datasource = new FileTopLevelDomainDatasource(path.join(__dirname, '../../../assets/top-level-domains.txt'))
       Singleton.instance = new TopLevelDomainRepositoryImpl(datasource)
     }
     return Singleton.instance
