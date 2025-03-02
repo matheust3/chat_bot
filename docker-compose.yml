@@ -7,6 +7,7 @@ services:
     user: ubuntu
     volumes:
       - ${DEV_ROOT_DIR}/dist:/home/developer/dist
+      - ${DEV_ROOT_DIR}/assets:/home/developer/assets
       - ${DEV_ROOT_DIR}/database-files:/home/developer/database-files
       - ${DEV_ROOT_DIR}/package.json:/home/developer/package.json
       - ${DEV_ROOT_DIR}/package-lock.json:/home/developer/package-lock.json

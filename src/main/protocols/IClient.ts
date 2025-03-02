@@ -1,5 +1,12 @@
 export interface IClient {
   /**
+   * Deleta uma mensagem
+   *
+   * @param chatId Id do chat
+   * @param messageId Id da mensagem
+   */
+  deleteMessage: (chatId: string, messageId: string) => Promise<void>
+  /**
    * Faz o download de um arquivo
    *
    * @param messageId Id da mensagem
