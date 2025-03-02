@@ -15,7 +15,9 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
 
     if (message.fromMe) {
       text += `\n\n🎩*Comandos de root*🎩 
-➖ \`#group-id\` *->* Retorna o ID do grupo
+➖ \`#group_info [argumentos]\` *->* Retorna informações do grupo
+       *Argumentos:*
+       \`-id\` *->* Retorna o ID do grupo
 ➖ \`#block-links\` *->* Bloqueia links no grupo`
     }
 
