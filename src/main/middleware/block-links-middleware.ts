@@ -1,6 +1,7 @@
 import { IClient } from '../protocols/IClient'
 import { IMessage } from '../protocols/IMessage'
 import { ChatsRepositoryInstance } from '../singletons/chats-repository-instance'
+import { FileLevelDomainRepositoryInstance } from '../singletons/file-top-level-domain-repository'
 
 export default async (message: IMessage, client: IClient, next: () => void): Promise<void> => {
   if (message.groupId !== undefined) {
@@ -9,8 +10,12 @@ export default async (message: IMessage, client: IClient, next: () => void): Pro
     const blockedLinks = await ChatsRepositoryInstance.getChatsLinksBlackList()
     // Verifica se o grupo atual está na lista de grupos com links bloqueados
     if (blockedLinks.includes(chatId)) {
+      // Pega a lista de TLD
+      const tld = await FileLevelDomainRepositoryInstance.getTopLevelDomains()
+      // Cria uma expressão regular para verificar se a mensagem contém um link
+      const linkRegex = new RegExp(`\\b[^\\s]+\\.(${tld.join('|')})\\b`, 'i')
       // Verifica se a mensagem é um link
-      if (message.body.match(/https?:\/\/[^\s]+/) != null) {
+      if (linkRegex.test(message.body)) {
         // Se for um link, remove a mensagem
         await client.deleteMessage(chatId, message.id)
       } else {
