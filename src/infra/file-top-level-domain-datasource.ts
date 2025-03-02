@@ -5,9 +5,9 @@ import fs from 'fs'
 export class FileTopLevelDomainDatasource implements ITopLevelDomainDatasource {
   readonly topLevelDomains: string[]
 
-  constructor () {
+  constructor (filePath: string) {
     // Lê o arquivo com a lista de domínios de primeiro nível
-    const file = fs.readFileSync(path.join(__dirname, '../../assets/top-level-domains.txt'))
+    const file = fs.readFileSync(path.join(__dirname, filePath))
     // Converte o arquivo em uma lista de domínios
     this.topLevelDomains = file.toString().toLocaleLowerCase().split('\n')
   }

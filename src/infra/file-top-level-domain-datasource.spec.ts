@@ -4,7 +4,7 @@ describe('file-top-level-domain-datasource.spec.ts - getTopLevelDomains', () => 
   let fileTopLevelDomainDatasource: FileTopLevelDomainDatasource
 
   beforeEach(() => {
-    fileTopLevelDomainDatasource = new FileTopLevelDomainDatasource()
+    fileTopLevelDomainDatasource = new FileTopLevelDomainDatasource('../../assets/top-level-domains.txt')
   })
 
   test('ensure return array witch tld', async () => {
