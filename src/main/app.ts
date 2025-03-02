@@ -21,40 +21,42 @@ setInterval(() => {
   }
 }, 900000)
 
-create({
-  session: 'stickerBot',
-  folderNameToken: path.join(__dirname, '/../../database-files/tokens'),
-  debug: false,
-  browserArgs: ['--no-sandbox'],
-  whatsappVersion: '2.3000.1019760984-alpha'
-}).then((client) => {
-  // Recebe a mensagem e envia a resposta
-  client.onAnyMessage((message) => {
-    const msg = messageAdapter(message)
-    const cli = clientAdapter(client)
+// Carrega os middlewares e os comandos
+middlewares().then((middlewares) => {
+  console.log('Middlewares carregados')
+  commands().then((commands) => {
+    console.log('Comandos carregados')
+    create({
+      session: 'stickerBot',
+      folderNameToken: path.join(__dirname, '/../../database-files/tokens'),
+      debug: false,
+      browserArgs: ['--no-sandbox'],
+      whatsappVersion: '2.3000.1019760984-alpha'
+    }).then((client) => {
+      // Recebe a mensagem e envia a resposta
+      client.onAnyMessage((message) => {
+        const msg = messageAdapter(message)
+        const cli = clientAdapter(client)
 
-    let next = true
-    const nextFunction = (): void => {
-      next = true
-    }
-
-    middlewares().then((middlewares) => {
-      if (!next) return
-      next = false
-      middlewares.forEach((middleware) => {
-        middleware(msg, cli, nextFunction).catch((error) => console.error('Erro ao executar o middleware', error))
-      })
-    }).catch((error) => console.error('Erro ao carregar os middlewares', error))
-
-    // Bloqueia a execução dos comandos se o middleware retornar false
-    if (!next) return
-
-    if (msg.isCommand) {
-      commands().then((commands) => {
-        commands.forEach((command) => {
-          command(msg, cli).catch((error) => console.error('Erro ao executar o comando', error))
+        let next = true
+        const nextFunction = (): void => {
+          next = true
+        }
+        if (!next) return
+        next = false
+        middlewares.forEach((middleware) => {
+          middleware(msg, cli, nextFunction).catch((error) => console.error('Erro ao executar o middleware', error))
         })
-      }).catch((error) => console.error('Erro ao carregar os comandos', error))
-    }
-  })
-}).catch((error) => console.error('Erro ao criar o cliente', error))
+
+        // Bloqueia a execução dos comandos se o middleware retornar false
+        if (!next) return
+
+        if (msg.isCommand) {
+          commands.forEach((command) => {
+            command(msg, cli).catch((error) => console.error('Erro ao executar o comando', error))
+          })
+        }
+      })
+    }).catch((error) => console.error('Erro ao criar o cliente', error))
+  }).catch((error) => console.error('Erro ao carregar os comandos', error))
+}).catch((error) => console.error('Erro ao carregar os middlewares', error))
