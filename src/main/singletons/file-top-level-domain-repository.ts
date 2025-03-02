@@ -1,6 +1,7 @@
 import { ITopLevelDomainRepository } from '../../domain/repositories/top-level-domain-repository'
 import { TopLevelDomainRepositoryImpl } from '../../data/repositories/top-level-domain-repository-impl'
 import { FileTopLevelDomainDatasource } from '../../infra/file-top-level-domain-datasource'
+import path from 'path'
 
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class
 class Singleton {
@@ -8,7 +9,7 @@ class Singleton {
 
   constructor () {
     if (Singleton.instance === undefined) {
-      const datasource = new FileTopLevelDomainDatasource('../assets/top-level-domains.txt')
+      const datasource = new FileTopLevelDomainDatasource(path.join(__dirname, '../../assets/top-level-domains.txt'))
       Singleton.instance = new TopLevelDomainRepositoryImpl(datasource)
     }
     return Singleton.instance
