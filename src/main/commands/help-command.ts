@@ -14,9 +14,9 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
 ➖ \`#link\` *->* Retorna o link do grupo`
 
     if (message.fromMe) {
-      text += `-#-#-#-#-# *Comandos de root* #-#-#-#-#- 
-      ➖ \`#group-id\` *->* Retorna o ID do grupo
-      ➖ \`#block-links\` *->* Bloqueia links no grupo`
+      text += `\n\n🎩*Comandos de root*🎩 
+➖ \`#group-id\` *->* Retorna o ID do grupo
+➖ \`#block-links\` *->* Bloqueia links no grupo`
     }
 
     await client.sendText(message.groupId ?? message.from, text, { quotedMsg: message.id })
