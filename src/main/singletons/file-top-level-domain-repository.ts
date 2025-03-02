@@ -8,7 +8,7 @@ class Singleton {
 
   constructor () {
     if (Singleton.instance === undefined) {
-      const datasource = new FileTopLevelDomainDatasource()
+      const datasource = new FileTopLevelDomainDatasource('../assets/top-level-domains.txt')
       Singleton.instance = new TopLevelDomainRepositoryImpl(datasource)
     }
     return Singleton.instance
