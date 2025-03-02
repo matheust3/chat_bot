@@ -12,6 +12,9 @@ export const clientAdapter = (client: Whatsapp): IClient => {
     getGroupInviteLink: async (chatId: string) => {
       return await client.getGroupInviteLink(chatId)
     },
+    deleteMessage: async (chatId: string, messageId: string) => {
+      await client.deleteMessage(chatId, messageId)
+    },
     sendImageAsSticker: async (to: string, pathOrBase64: string, type: 'static' | 'animated', op?: { quotedMsg: string }) => {
       if (type === 'static') {
         await client.sendImageAsSticker(to, pathOrBase64)
