@@ -23,4 +23,4 @@ class Singleton {
   }
 }
 
-export const ChatsDatasourceInstance = Singleton.getInstance()
+export const FileLevelDomainRepositoryInstance = Singleton.getInstance()
