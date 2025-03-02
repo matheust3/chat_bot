@@ -19,6 +19,17 @@ export class ChatsDatasourceImpl implements ChatsDatasource {
     })
   }
 
+  async close (): Promise<void> {
+    await new Promise<void>((resolve, reject) => {
+      this._sqliteDatabase.close((err) => {
+        if (err != null) {
+          reject(err)
+        }
+        resolve()
+      })
+    })
+  }
+
   async addChatToLinksBlackList (chatId: string): Promise<void> {
     this._sqliteDatabase.run('INSERT INTO chats_links_blacklist (chatId) VALUES (?)', chatId)
   }
