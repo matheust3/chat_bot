@@ -19,6 +19,7 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
   let quotedMsg: IQuotedMsg | undefined
 
   const body = message.body ?? ''
+  const caption = message.caption
   // Check if the message is a command
   if (body.startsWith('#') || message.caption?.startsWith('#') === true) {
     // Get the command without the '#'
@@ -77,6 +78,7 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
     fromMe: message?.fromMe ?? false,
     from: message.from,
     groupId,
+    caption,
     isCommand: command !== undefined,
     quotedMsg,
     type: messageType
