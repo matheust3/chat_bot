@@ -15,8 +15,8 @@ export default async (message: IMessage, client: IClient, next: () => void): Pro
       const tld = await FileLevelDomainRepositoryInstance.getTopLevelDomains()
       // Cria uma expressão regular para verificar se a mensagem contém um link
       const linkRegex = new RegExp(`\\b[^\\s]+\\.(${tld.join('|')})\\b`, 'i')
-      // Verifica se a mensagem é um link
-      if (linkRegex.test(message.body)) {
+      // Verifica se a mensagem é um link ou se há um link no caption da mensagem
+      if (linkRegex.test(message.body) || (message.caption !== undefined && linkRegex.test(message.caption))) {
         // Se for um link, remove a mensagem
         await client.deleteMessage(chatId, message.id)
       } else {
