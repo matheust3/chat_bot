@@ -12,7 +12,7 @@ interface IOriginQuotedMsg {
   type: string
 }
 
-export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: string, quotedMsg?: IOriginQuotedMsg }): IMessage => {
+export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: string, quotedMsg?: IOriginQuotedMsg, quotedParticipant: string }): IMessage => {
   let groupId: string | undefined
   let command: ICommand | undefined
   let messageType: IMessageType = IMessageType.CHAT
@@ -56,6 +56,7 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
 
   // Check if the message has a quoted message
   if (message.quotedMsg !== undefined) {
+    console.log('message.quotedMsg', message.quotedMsg)
     if (message.quotedMsg?.id?._serialized === undefined) {
       message.quotedMsg.id = {
         _serialized: message.quotedMsgId as unknown as string
@@ -72,9 +73,13 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
     quotedMsg = {
       id: message.quotedMsg.id._serialized,
       body: message.quotedMsg.body,
-      from: message.quotedMsg.from,
+      from: message.quotedParticipant,
       type: quotedMsgType
     }
+  }
+
+  if (typeof message.chatId !== 'string') {
+    message.chatId = message.chatId._serialized
   }
 
   return {
@@ -84,6 +89,7 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
     fromMe: message?.fromMe ?? false,
     from: message.from,
     groupId,
+    chatId: message.chatId,
     caption,
     isCommand: command !== undefined,
     quotedMsg,
