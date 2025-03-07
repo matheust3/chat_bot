@@ -3,6 +3,7 @@ import { IQuotedMsg } from './IQuotedMsg'
 
 export interface IMessage {
   readonly body: string
+  readonly chatId: string
   readonly caption?: string
   readonly command?: ICommand
   readonly groupId?: string
