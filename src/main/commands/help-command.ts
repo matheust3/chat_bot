@@ -4,6 +4,7 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
   if (message.command?.command === 'help' || message.command?.command === 'ajuda') {
     let text = `💬 *Comandos Disponíveis* 💬
 
+*#️⃣ban ->* O ADM bani um usuário do grupo
 *#️⃣help ->* Esta mensagem de ajuda
 *#️⃣ajuda ->* Esta mensagem de ajuda
 *#️⃣sticker [argumentos] ->* Faz figurinhas
