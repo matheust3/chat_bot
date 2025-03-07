@@ -6,7 +6,7 @@ import { FileLevelDomainRepositoryInstance } from '../singletons/file-top-level-
 export default async (message: IMessage, client: IClient, next: () => void): Promise<void> => {
   // Verifica se a mensagem é de um grupo e se não foi enviada por mim
   if (message.groupId !== undefined && !message.fromMe) {
-    const chatId = message.groupId
+    const chatId = message.chatId
     // Pega a lista de grupos que estão com os links bloqueados
     const blockedLinks = await ChatsRepositoryInstance.getChatsLinksBlackList()
     // Verifica se o grupo atual está na lista de grupos com links bloqueados

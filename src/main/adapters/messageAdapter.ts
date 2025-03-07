@@ -56,7 +56,6 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
 
   // Check if the message has a quoted message
   if (message.quotedMsg !== undefined) {
-    console.log('message.quotedMsg', message.quotedMsg)
     if (message.quotedMsg?.id?._serialized === undefined) {
       message.quotedMsg.id = {
         _serialized: message.quotedMsgId as unknown as string
