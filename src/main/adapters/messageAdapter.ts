@@ -55,7 +55,13 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
   }
 
   // Check if the message has a quoted message
-  if (message.quotedMsg?.id?._serialized !== undefined) {
+  if (message.quotedMsg !== undefined) {
+    if (message.quotedMsg?.id?._serialized === undefined) {
+      message.quotedMsg.id = {
+        _serialized: message.quotedMsgId as unknown as string
+      }
+    }
+
     let quotedMsgType = IMessageType.CHAT
     for (const key in IMessageType) {
       if (message.quotedMsg?.type === IMessageType[key]) {
