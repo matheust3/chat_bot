@@ -1,4 +1,4 @@
-import { create } from '@wppconnect-team/wppconnect'
+import { create, Message } from '@wppconnect-team/wppconnect'
 import path from 'path'
 import { promisify } from 'util'
 import child_process from 'child_process'
@@ -41,7 +41,7 @@ chatsDatasource.createTables().then(() => {
           whatsappVersion: '2.3000.1019760984-alpha'
         }).then((client) => {
           // Recebe a mensagem e envia a resposta
-          client.onAnyMessage((message) => {
+          client.onAnyMessage((message: Message & { quotedParticipant: string }) => {
             const msg = messageAdapter(message)
             const cli = clientAdapter(client)
 
