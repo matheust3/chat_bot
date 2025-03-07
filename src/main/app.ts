@@ -42,14 +42,14 @@ chatsDatasource.createTables().then(() => {
         }).then((client) => {
           // Recebe a mensagem e envia a resposta
           client.onAnyMessage((message: Message & { quotedParticipant: string }) => {
-            const msg = messageAdapter(message)
-            const cli = clientAdapter(client)
-
-            let next = true
-            const nextFunction = (): void => {
-              next = true
-            }
             (async () => {
+              const msg = await messageAdapter(message, client)
+              const cli = clientAdapter(client)
+
+              let next = true
+              const nextFunction = (): void => {
+                next = true
+              }
               // Executa os middlewares
               for (const middleware of middlewares) {
                 if (!next) break
