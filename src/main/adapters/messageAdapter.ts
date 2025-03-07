@@ -1,4 +1,4 @@
-import { Message } from '@wppconnect-team/wppconnect'
+import { Message, Whatsapp, Wid } from '@wppconnect-team/wppconnect'
 import { ICommand, IMessage } from '../protocols/IMessage'
 import { IMessageType } from '../protocols/IMessageType'
 import { IQuotedMsg } from '../protocols/IQuotedMsg'
@@ -12,11 +12,12 @@ interface IOriginQuotedMsg {
   type: string
 }
 
-export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: string, quotedMsg?: IOriginQuotedMsg }): IMessage => {
+export const messageAdapter = async (message: Message & { fromMe?: boolean, caption?: string, quotedMsg?: IOriginQuotedMsg, quotedParticipant: string }, client: Whatsapp): Promise<IMessage> => {
   let groupId: string | undefined
   let command: ICommand | undefined
   let messageType: IMessageType = IMessageType.CHAT
   let quotedMsg: IQuotedMsg | undefined
+  let fromAdmin = false
 
   const body = message.body ?? ''
   const caption = message.caption
@@ -45,6 +46,14 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
     } else {
       groupId = message.chatId._serialized
     }
+    // Check if the message is from an admin
+    const adminsWid: Wid[] = await client.getGroupAdmins(groupId)
+    for (const admin of adminsWid) {
+      if (admin._serialized === message.sender.id) {
+        fromAdmin = true
+        break
+      }
+    }
   }
 
   // Check the message type
@@ -55,7 +64,13 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
   }
 
   // Check if the message has a quoted message
-  if (message.quotedMsg?.id?._serialized !== undefined) {
+  if (message.quotedMsg !== undefined) {
+    if (message.quotedMsg?.id?._serialized === undefined) {
+      message.quotedMsg.id = {
+        _serialized: message.quotedMsgId as unknown as string
+      }
+    }
+
     let quotedMsgType = IMessageType.CHAT
     for (const key in IMessageType) {
       if (message.quotedMsg?.type === IMessageType[key]) {
@@ -66,9 +81,13 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
     quotedMsg = {
       id: message.quotedMsg.id._serialized,
       body: message.quotedMsg.body,
-      from: message.quotedMsg.from,
+      from: message.quotedParticipant,
       type: quotedMsgType
     }
+  }
+
+  if (typeof message.chatId !== 'string') {
+    message.chatId = message.chatId._serialized
   }
 
   return {
@@ -77,7 +96,10 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
     command,
     fromMe: message?.fromMe ?? false,
     from: message.from,
+    fromAdmin,
+    sender: message.sender.id,
     groupId,
+    chatId: message.chatId,
     caption,
     isCommand: command !== undefined,
     quotedMsg,

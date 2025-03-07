@@ -4,6 +4,7 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
   if (message.command?.command === 'help' || message.command?.command === 'ajuda') {
     let text = `💬 *Comandos Disponíveis* 💬
 
+*#️⃣ban ->* O ADM bani um usuário do grupo
 *#️⃣help ->* Esta mensagem de ajuda
 *#️⃣ajuda ->* Esta mensagem de ajuda
 *#️⃣sticker [argumentos] ->* Faz figurinhas
@@ -13,12 +14,16 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
 
     if (message.fromMe) {
       text += `\n\n🎩*Comandos de root*🎩\n 
+*#️⃣block [argumentos] ->* Bloqueia conteúdo de um grupo
+        *Argumentos:*
+        \`-links\` *->* Bloqueia links no grupo
+*#️⃣debug [argumentos] ->* Bloqueia conteúdo de um grupo
+        *Argumentos:*
+        \`-message\` *->* Usado para analisar mensagens
 *#️⃣group_info [argumentos] ->* Retorna informações do grupo
        *Argumentos:*
        \`-id\` *->* Retorna o ID do grupo
-*#️⃣block [argumentos] ->* Bloqueia conteúdo de um grupo
-       *Argumentos:*
-       \`-links\` *->* Bloqueia links no grupo`
+*#️⃣get_message_d ->* Retorna o id de uma mensagem`
     }
 
     await client.sendText(message.groupId ?? message.from, text, { quotedMsg: message.id })

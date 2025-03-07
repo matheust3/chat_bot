@@ -3,6 +3,9 @@ import { IClient } from '../protocols/IClient'
 
 export const clientAdapter = (client: Whatsapp): IClient => {
   return {
+    ban: async (chatId: string, contactId: string) => {
+      await client.removeParticipant(chatId, contactId)
+    },
     downloadFile: async (messageId: string) => {
       // Pega a mensagem
       const message = await client.getMessageById(messageId)
@@ -13,7 +16,7 @@ export const clientAdapter = (client: Whatsapp): IClient => {
       return await client.getGroupInviteLink(chatId)
     },
     deleteMessage: async (chatId: string, messageId: string) => {
-      await client.deleteMessage(chatId, messageId)
+      await client.deleteMessage(chatId, messageId, false, true)
     },
     sendImageAsSticker: async (to: string, pathOrBase64: string, type: 'static' | 'animated', op?: { quotedMsg: string }) => {
       if (type === 'static') {
