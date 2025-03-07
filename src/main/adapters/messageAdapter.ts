@@ -1,4 +1,4 @@
-import { Message } from '@wppconnect-team/wppconnect'
+import { Message, Whatsapp, Wid } from '@wppconnect-team/wppconnect'
 import { ICommand, IMessage } from '../protocols/IMessage'
 import { IMessageType } from '../protocols/IMessageType'
 import { IQuotedMsg } from '../protocols/IQuotedMsg'
@@ -12,11 +12,12 @@ interface IOriginQuotedMsg {
   type: string
 }
 
-export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: string, quotedMsg?: IOriginQuotedMsg, quotedParticipant: string }): IMessage => {
+export const messageAdapter = async (message: Message & { fromMe?: boolean, caption?: string, quotedMsg?: IOriginQuotedMsg, quotedParticipant: string }, client: Whatsapp): Promise<IMessage> => {
   let groupId: string | undefined
   let command: ICommand | undefined
   let messageType: IMessageType = IMessageType.CHAT
   let quotedMsg: IQuotedMsg | undefined
+  let fromAdmin = false
 
   const body = message.body ?? ''
   const caption = message.caption
@@ -44,6 +45,14 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
       groupId = message.chatId
     } else {
       groupId = message.chatId._serialized
+    }
+    // Check if the message is from an admin
+    const adminsWid: Wid[] = await client.getGroupAdmins(groupId)
+    for (const admin of adminsWid) {
+      if (admin._serialized === message.sender.id) {
+        fromAdmin = true
+        break
+      }
     }
   }
 
@@ -87,6 +96,7 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
     command,
     fromMe: message?.fromMe ?? false,
     from: message.from,
+    fromAdmin,
     sender: message.sender.id,
     groupId,
     chatId: message.chatId,

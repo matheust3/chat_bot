@@ -10,6 +10,7 @@ export interface IMessage {
   readonly groupId?: string
   readonly from: string
   readonly fromMe: boolean
+  readonly fromAdmin: boolean
   readonly isCommand: boolean
   readonly id: string
   readonly quotedMsg?: IQuotedMsg
