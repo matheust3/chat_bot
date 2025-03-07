@@ -19,6 +19,10 @@ export default async (message: IMessage, client: IClient, next: () => void): Pro
       if (linkRegex.test(message.body) || (message.caption !== undefined && linkRegex.test(message.caption))) {
         // Se for um link, remove a mensagem
         await client.deleteMessage(chatId, message.id)
+        await client.sendText(chatId, 'Links não são permitidos neste grupo', { quotedMsg: message.id })
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        // Bane o usuário que enviou o link
+        await client.ban(chatId, message.sender)
       } else {
         // Se não for um link, passa para o próximo middleware
         next()
