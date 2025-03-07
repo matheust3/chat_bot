@@ -1,5 +1,9 @@
 export interface IClient {
   /**
+   * Bane um usuário de um grupo
+   */
+  ban: (chatId: string, contactId: string) => Promise<void>
+  /**
    * Deleta uma mensagem
    *
    * @param chatId Id do chat
