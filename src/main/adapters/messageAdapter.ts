@@ -81,12 +81,16 @@ export const messageAdapter = (message: Message & { fromMe?: boolean, caption?: 
     message.chatId = message.chatId._serialized
   }
 
+  console.log('from', message.from)
+  console.log('sender', message.sender.id)
+
   return {
     id: message.id,
     body: message.body ?? '',
     command,
     fromMe: message?.fromMe ?? false,
     from: message.from,
+    sender: message.sender.id,
     groupId,
     chatId: message.chatId,
     caption,
