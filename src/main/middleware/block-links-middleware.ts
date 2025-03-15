@@ -17,12 +17,16 @@ export default async (message: IMessage, client: IClient, next: () => void): Pro
       const linkRegex = new RegExp(`\\b[^\\s]+\\.(${tld.join('|')})\\b`, 'i')
       // Verifica se a mensagem é um link ou se há um link no caption da mensagem
       if (linkRegex.test(message.body) || (message.caption !== undefined && linkRegex.test(message.caption))) {
-        // Se for um link, remove a mensagem
-        await client.deleteMessage(chatId, message.id)
-        await client.sendText(chatId, 'Links não são permitidos neste grupo', { quotedMsg: message.id })
+        try {
+          await client.sendText(chatId, 'Links não são permitidos neste grupo', { quotedMsg: message.id })
+        } catch (e) {
+          console.log(e)
+        }
         await new Promise(resolve => setTimeout(resolve, 2000))
         // Bane o usuário que enviou o link
         await client.ban(chatId, message.sender)
+        // Se for um link, remove a mensagem
+        await client.deleteMessage(chatId, message.id)
       } else {
         // Se não for um link, passa para o próximo middleware
         next()

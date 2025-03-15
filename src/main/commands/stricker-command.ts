@@ -19,8 +19,14 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
     let mediaMsgId = ''
     if (message.type === IMessageType.IMAGE || message.type === IMessageType.VIDEO) {
       mediaMsgId = message.id
-    } else if (message.quotedMsg !== undefined && (message.quotedMsg.type === IMessageType.IMAGE || message.quotedMsg.type === IMessageType.VIDEO)) {
-      mediaMsgId = message.quotedMsg.id
+    } else if (message.quotedMsgId !== undefined) {
+      const quotedMessage = await message.quotedMsg
+      if (quotedMessage !== undefined && (quotedMessage.type === IMessageType.IMAGE || quotedMessage.type === IMessageType.VIDEO)) {
+        mediaMsgId = quotedMessage.id
+      } else {
+        await client.sendText(message.groupId ?? message.from, 'Você precisa enviar uma imagem ou vídeo para transformar em sticker', { quotedMsg: message.id })
+        return
+      }
     } else {
       await client.sendText(message.groupId ?? message.from, 'Você precisa enviar uma imagem ou vídeo para transformar em sticker', { quotedMsg: message.id })
       return

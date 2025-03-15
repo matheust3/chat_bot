@@ -1,7 +1,6 @@
 import { Message, Whatsapp, Wid } from '@wppconnect-team/wppconnect'
 import { ICommand, IMessage } from '../protocols/IMessage'
 import { IMessageType } from '../protocols/IMessageType'
-import { IQuotedMsg } from '../protocols/IQuotedMsg'
 
 interface IOriginQuotedMsg {
   id: {
@@ -16,7 +15,8 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
   let groupId: string | undefined
   let command: ICommand | undefined
   let messageType: IMessageType = IMessageType.CHAT
-  let quotedMsg: IQuotedMsg | undefined
+  // Create a closure to maintain the cached quotedMsg
+  let cachedQuotedMsg: IMessage | undefined
   let fromAdmin = false
 
   const body = message.body ?? ''
@@ -63,29 +63,6 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
     }
   }
 
-  // Check if the message has a quoted message
-  if (message.quotedMsg !== undefined) {
-    if (message.quotedMsg?.id?._serialized === undefined) {
-      message.quotedMsg.id = {
-        _serialized: message.quotedMsgId as unknown as string
-      }
-    }
-
-    let quotedMsgType = IMessageType.CHAT
-    for (const key in IMessageType) {
-      if (message.quotedMsg?.type === IMessageType[key]) {
-        quotedMsgType = IMessageType[key]
-      }
-    }
-
-    quotedMsg = {
-      id: message.quotedMsg.id._serialized,
-      body: message.quotedMsg.body,
-      from: message.quotedParticipant,
-      type: quotedMsgType
-    }
-  }
-
   if (typeof message.chatId !== 'string') {
     message.chatId = message.chatId._serialized
   }
@@ -102,7 +79,27 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
     chatId: message.chatId,
     caption,
     isCommand: command !== undefined,
-    quotedMsg,
+    quotedMsgId: message.quotedMsgId as unknown as string | undefined,
+    get quotedMsg (): Promise<IMessage | undefined> {
+      return (async () => {
+        if (cachedQuotedMsg !== undefined) {
+          return cachedQuotedMsg
+        }
+
+        if (message.quotedMsgId !== undefined && message.quotedMsgId !== null) {
+          try {
+            const msg = await client.getMessageById(message.quotedMsgId) as Message & { quotedParticipant: string }
+            cachedQuotedMsg = await messageAdapter(msg, client)
+            return cachedQuotedMsg
+          } catch (error) {
+            console.error('Error fetching quoted message:', error)
+            return undefined
+          }
+        } else {
+          return undefined
+        }
+      })()
+    },
     type: messageType
   }
 }
