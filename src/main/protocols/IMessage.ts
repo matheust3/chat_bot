@@ -13,6 +13,7 @@ export interface IMessage {
   readonly isCommand: boolean
   readonly id: string
   readonly quotedMsgId?: string
+  readonly quotedMsg?: Promise<IMessage | undefined>
   readonly type: IMessageType
 }
 
