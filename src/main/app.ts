@@ -38,7 +38,7 @@ chatsDatasource.createTables().then(() => {
           folderNameToken: path.join(__dirname, '/../../database-files/tokens'),
           debug: false,
           browserArgs: ['--no-sandbox'],
-          whatsappVersion: '2.3000.1019760984-alpha'
+          // whatsappVersion: '2.3000.1019760984-alpha'
         }).then((client) => {
           // Recebe a mensagem e envia a resposta
           client.onAnyMessage((message: Message & { quotedParticipant: string }) => {
