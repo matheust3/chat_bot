@@ -122,9 +122,13 @@ export class GroqAiAgent implements IAAgent {
         }
 
         let response = "Aqui estão os gastos encontrados:\n";
+        let total = 0;
         expenses.forEach(expense => {
-          response += `- ${expense.description}: R$ ${expense.amount} (${expense.category || 'Sem categoria'}) em ${expense.date}\n`;
+          response += `- ${expense.description}: R$ ${expense.amount} (${expense.category || 'Sem categoria'}) em ${expense.date.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'})}\n`;
+          total += expense.amount;
         });
+        response += `\n*Total: R$ ${total.toFixed(2)}*`;
+
 
         return response;
       } catch (e) {
