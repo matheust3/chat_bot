@@ -5,12 +5,22 @@ import { Expense } from "../domain/models/expense"
 export class SqliteExpensesDatasource implements ExpensesDatasource {
   private _sqliteDatabase: Database
 
-  constructor (sqliteDatabase: any) {
+  constructor(sqliteDatabase: any) {
     this._sqliteDatabase = sqliteDatabase
+  }
+  async updateExpense(expense: Expense): Promise<Expense> {
+    return await new Promise((resolve, reject) => {
+      this._sqliteDatabase.run('UPDATE expenses SET description = ?, amount = ?, date = ?, category = ? WHERE id = ?', [expense.description, expense.amount, expense.date.toISOString(), expense.category, expense.id], function (err) {
+        if (err != null) {
+          reject(err)
+        }
+        resolve(expense)
+      })
+    })
   }
 
 
-  async saveExpense (expense: Expense) : Promise<Expense>{
+  async saveExpense(expense: Expense): Promise<Expense> {
     return await new Promise((resolve, reject) => {
       this._sqliteDatabase.run('INSERT INTO expenses (id, description, amount, date, category) VALUES (?, ?, ?, ?, ?)', [expense.id, expense.description, expense.amount, expense.date.toISOString(), expense.category], function (err) {
         if (err != null) {
@@ -21,7 +31,7 @@ export class SqliteExpensesDatasource implements ExpensesDatasource {
     })
   }
 
-  async deleteExpense (id: string) : Promise<void>{
+  async deleteExpense(id: string): Promise<void> {
     return await new Promise((resolve, reject) => {
       this._sqliteDatabase.run('DELETE FROM expenses WHERE id = ?', [id], function (err) {
         if (err != null) {
@@ -33,10 +43,21 @@ export class SqliteExpensesDatasource implements ExpensesDatasource {
   }
 
 
-  async getExpenses (filters: ExpenseFilters) : Promise<Expense[]>{
+  async getExpenses(filters: ExpenseFilters): Promise<Expense[]> {
+    // Converter objetos Date para strings ISO, se necessário
+    const startDateIso = filters.startDate instanceof Date
+      ? filters.startDate.toISOString()
+      : filters.startDate;
+
+    const endDateIso = filters.endDate instanceof Date
+      ? filters.endDate.toISOString()
+      : filters.endDate;
     return await new Promise((resolve, reject) => {
-      const query = 'SELECT * FROM expenses WHERE (category = ? OR ? IS NULL) AND (date >= ? OR ? IS NULL) AND (date <= ? OR ? IS NULL)'
-      this._sqliteDatabase.all(query, [filters.category, filters.category, filters.startDate, filters.startDate, filters.endDate, filters.endDate], (err: Error | null, rows: Array<{ id: string, description: string, amount: number, date: string, category: string }>) => {
+      const query = 'SELECT * FROM expenses WHERE (category = ? OR ? IS NULL) AND (date >= ? OR ? IS NULL) AND (date <= ? OR ? IS NULL) AND (id = ? OR ? IS NULL)'
+      this._sqliteDatabase.all(query, [filters.category, filters.category,
+        startDateIso, startDateIso,
+        endDateIso, endDateIso,
+      filters.id, filters.id], (err: Error | null, rows: Array<{ id: string, description: string, amount: number, date: string, category: string }>) => {
         if (err != null) {
           reject(err)
         }
@@ -55,7 +76,7 @@ export class SqliteExpensesDatasource implements ExpensesDatasource {
     })
   }
 
-  async createTables (): Promise<void> {
+  async createTables(): Promise<void> {
     return await new Promise((resolve, reject) => {
       this._sqliteDatabase.run('CREATE TABLE IF NOT EXISTS expenses (id TEXT PRIMARY KEY, description TEXT, amount REAL, date TEXT, category TEXT)', (err) => {
         if (err != null) {

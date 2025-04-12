@@ -30,7 +30,7 @@ export class GroqAiAgent implements IAAgent {
         },
         {
           role: "system",
-          content: "Classifique a intenção do usuário em uma das seguintes categorias: ADD_EXPENSE, QUERY_EXPENSES, ou OTHER. Responda apenas retornando um objeto JSON com a intenção, sem explicações adicionais. Exemplo: {\"intent\": \"ADD_EXPENSE\"}"
+          content: "Classifique a intenção do usuário em uma das seguintes categorias: ADD_EXPENSE, EDIT_EXPENSE, QUERY_EXPENSES, ou OTHER. Responda apenas retornando um objeto JSON com a intenção, sem explicações adicionais. Exemplo: {\"intent\": \"ADD_EXPENSE\"}"
         },
         {
           role: "user",
@@ -89,6 +89,86 @@ export class GroqAiAgent implements IAAgent {
       return "Não consegui entender os detalhes do gasto. Tente ser mais específico.";
     }
 
+    else if (intent?.intent.includes("EDIT_EXPENSE")) {
+      // Primeiro, busque os gastos dos últimos 30 dias para fornecer como contexto
+      const today = new Date();
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+
+      const recentExpenses = await this.expenseDb.getExpenses({
+        startDate: thirtyDaysAgo,
+        endDate: today
+      });
+
+      // Formatar a lista de gastos recentes como contexto
+      let recentExpensesContext = "Lista de gastos recentes, para consultar os ids:\n";
+      recentExpenses.forEach((expense, index) => {
+        recentExpensesContext += `ID: ${expense.id} | ${expense.description} - R$ ${expense.amount} (${expense.category}) - ${expense.date.toLocaleDateString('pt-BR')}\n`;
+      });
+
+      console.log(recentExpensesContext);
+      // Extrair identificador e campos a serem atualizados
+      const editExtractionResponse = await this.client.chat.completions.create({
+        model: process.env.BASIC_MODEL || "llama3-8b-8192",
+        messages: [
+          {
+            role: "system",
+            content: "Você é um assistente financeiro. Sua tarefa é ajudar o usuário a editar gastos existentes."
+          },
+          {
+            role: "system",
+            content: recentExpensesContext
+          },
+          {
+            role: "system",
+            content: "Com base na lista de gastos recentes acima, extraia as informações de edição da mensagem do usuário e retorne apenas um objeto JSON com os campos: expenseId (string - o ID exato do gasto a ser editado - DEVE SER UM ID DA LISTA DE GASTOS RECENTES, NUNCA INVENTE UM ID), updates (objeto com os campos a serem atualizados, que podem ser: description, amount, category, date no formato YYYY-MM-DD)"
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ]
+      });
+
+      try {
+        const editData = this.extractJsonFromText(editExtractionResponse.choices[0].message.content || "");
+        console.log("Dados de edição extraídos:", editData);
+
+        if (editData?.expenseId && editData?.updates && Object.keys(editData.updates).length > 0) {
+          // Procurar o gasto pelo ID em vez de pela descrição
+          const expenseToEdit = recentExpenses.find(expense => expense.id === editData.expenseId);
+
+          if (!expenseToEdit) {
+            return `Não encontrei nenhum gasto com o ID "${editData.expenseId}". Por favor, verifique o ID e tente novamente.`;
+          }
+
+          // Criar objeto com os dados atualizados
+          const updatedExpense: Expense = {
+            ...expenseToEdit,
+            description: editData.updates.description || expenseToEdit.description,
+            amount: editData.updates.amount !== undefined ? Number(editData.updates.amount) : expenseToEdit.amount,
+            category: editData.updates.category || expenseToEdit.category,
+            date: editData.updates.date ? new Date(editData.updates.date) : expenseToEdit.date
+          };
+
+          // Atualizar o gasto
+          await this.expenseDb.updateExpense(updatedExpense);
+
+          // Formatar resposta com as alterações realizadas
+          let changes: string[] = [];
+          if (editData.updates.description) changes.push(`descrição de "${expenseToEdit.description}" para "${updatedExpense.description}"`);
+          if (editData.updates.amount) changes.push(`valor de R$${expenseToEdit.amount} para R$${updatedExpense.amount}`);
+          if (editData.updates.category) changes.push(`categoria de "${expenseToEdit.category}" para "${updatedExpense.category}"`);
+          if (editData.updates.date) changes.push(`data para ${updatedExpense.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}`);
+
+          return `✅ Gasto editado com sucesso! Alterações: ${changes.join(', ')}.`;
+        }
+      } catch (e) {
+        console.error("Erro ao processar edição:", e);
+      }
+
+      return "Não consegui entender os detalhes da edição. Por favor, especifique qual gasto deseja editar e quais informações deseja alterar.";
+    }
     else if (intent?.intent.includes("QUERY_EXPENSES")) {
       // Extrair parâmetros de consulta da mensagem
       const queryExtractionResponse = await this.client.chat.completions.create({
@@ -124,7 +204,7 @@ export class GroqAiAgent implements IAAgent {
         let response = "Aqui estão os gastos encontrados:\n";
         let total = 0;
         expenses.forEach(expense => {
-          response += `- ${expense.description}: R$ ${expense.amount} (${expense.category || 'Sem categoria'}) em ${expense.date.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'})}\n`;
+          response += `- ${expense.description}: R$ ${expense.amount} (${expense.category || 'Sem categoria'}) em ${expense.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}\n`;
           total += expense.amount;
         });
         response += `\n*Total: R$ ${total.toFixed(2)}*`;
