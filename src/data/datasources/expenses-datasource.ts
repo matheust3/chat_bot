@@ -4,8 +4,8 @@ import { Expense } from "../../domain/models/expense";
 // Interface para os filtros de despesas
 export interface ExpenseFilters {
   category?: string;
-  startDate?: string;
-  endDate?: string;
+  startDate?: Date;
+  endDate?: Date;
   minAmount?: number;
   maxAmount?: number;
   description?: string;

@@ -1,5 +1,7 @@
 import { IAAgent } from "../../domain/services/ai-agent";
 import Groq from "groq-sdk";
+import { ExpensesDatasource } from "../datasources/expenses-datasource";
+import { Expense } from "../../domain/models/expense";
 
 // Interface para nosso histórico de mensagens interno
 interface ChatMessage {
@@ -10,11 +12,12 @@ interface ChatMessage {
 
 export class GroqAiAgent implements IAAgent {
   private readonly client: Groq;
-  private readonly expenseDb: ExpenseDatabase;
+  private readonly expenseDb: ExpensesDatasource;
 
-  constructor() {
+  constructor(db: ExpensesDatasource) {
     this.client = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    this.expenseDb = new ExpenseDatabase();}
+    this.expenseDb = db;
+  }
 
   async handleMessage(message: string): Promise<string> {
     // Primeiro, determine a intenção usando um modelo LLM
@@ -62,12 +65,19 @@ export class GroqAiAgent implements IAAgent {
       });
 
       try {
-        console.log("Dados do gasto extraídos (bruto):", extractionResponse.choices[0].message.content);
         const extractedJson = this.extractJsonFromText(extractionResponse.choices[0].message.content || "");
         console.log("Dados do gasto extraídos (processados):", extractedJson);
 
         if (extractedJson.description && extractedJson.amount) {
-          const expense = await this.expenseDb.saveExpense(extractedJson);
+          const expenseToSave: Expense = {
+            amount: Number(extractedJson.amount),
+            description: extractedJson.description,
+            date: extractedJson.date ? new Date(extractedJson.date) : new Date(),
+            category: extractedJson.category || 'Outros',
+            id: new Date().toISOString() + Math.random().toString(36).substring(2, 15) // Gerar um ID único,
+          }
+
+          const expense = await this.expenseDb.saveExpense(expenseToSave);
           return `✅ Gasto salvo: ${expense.description} - R$ ${expense.amount} (${expense.category || 'Sem categoria'})`;
         }
       } catch (e) {
@@ -90,7 +100,7 @@ export class GroqAiAgent implements IAAgent {
           },
           {
             role: "system",
-            content: "Extraia os parâmetros de consulta da mensagem do usuário e retorne apenas um objeto JSON com os campos: category (string, opcional), startDate (string no formato YYYY-MM-DD, opcional), endDate (string no formato YYYY-MM-DD, opcional), minAmount (number, opcional), maxAmount (number, opcional). Se o usuário mencionar períodos como 'este mês', 'hoje', 'última semana', converta para datas reais."
+            content: "Extraia os parâmetros de consulta da mensagem do usuário e retorne apenas um objeto JSON com os campos: category (string, opcional), startDate (string no formato YYYY-MM-DD, opcional), endDate (string no formato YYYY-MM-DD, opcional), minAmount (number, opcional), maxAmount (number, opcional), description (string, opcional). Se o usuário mencionar períodos como 'este mês', 'hoje', 'última semana', converta para datas reais."
           },
           {
             role: "user",
@@ -103,42 +113,9 @@ export class GroqAiAgent implements IAAgent {
         // Extrair e processar os parâmetros de consulta
         const queryParams = this.extractJsonFromText(queryExtractionResponse.choices[0].message.content || "{}");
         console.log("Parâmetros de consulta extraídos:", queryParams);
-        // Processar períodos relativos se não houver datas específicas
-        if (!queryParams.startDate && !queryParams.endDate) {
-          const today = new Date();
-          const todayStr = today.toISOString().split('T')[0];
-
-          // Verificar menções a períodos específicos na mensagem
-          const lowerMsg = message.toLowerCase();
-
-          if (lowerMsg.includes("hoje")) {
-            queryParams.startDate = todayStr;
-            queryParams.endDate = todayStr;
-          }
-          else if (lowerMsg.includes("esta semana") || lowerMsg.includes("essa semana")) {
-            // Calcular início da semana (domingo)
-            const startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - today.getDay());
-            queryParams.startDate = startOfWeek.toISOString().split('T')[0];
-            queryParams.endDate = todayStr;
-          }
-          else if (lowerMsg.includes("este mês") || lowerMsg.includes("esse mês")) {
-            // Calcular início do mês
-            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-            queryParams.startDate = startOfMonth.toISOString().split('T')[0];
-            queryParams.endDate = todayStr;
-          }
-          else if (lowerMsg.includes("último mês") || lowerMsg.includes("mês passado")) {
-            // Calcular mês anterior
-            const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-            const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-            queryParams.startDate = startOfLastMonth.toISOString().split('T')[0];
-            queryParams.endDate = endOfLastMonth.toISOString().split('T')[0];
-          }
-        }
 
         // Consultar o banco de dados
-        const expenses = await this.expenseDb.queryExpenses(queryParams);
+        const expenses = await this.expenseDb.getExpenses(queryParams);
 
         if (expenses.length === 0) {
           return "Nenhum gasto encontrado com os critérios informados.";
@@ -251,76 +228,4 @@ export class GroqAiAgent implements IAAgent {
     }
   }
 
-}
-
-interface Expense {
-  id?: string;
-  description: string;
-  amount: number;
-  category?: string;
-  date: string;
-}
-
-export class ExpenseDatabase {
-  private expenses: Expense[] = [];
-
-  constructor() {
-    // Em um cenário real, você inicializaria a conexão com o banco de dados aqui
-    // Por enquanto, usaremos um array em memória para armazenar os gastos
-  }
-
-  async saveExpense(expense: Expense): Promise<Expense> {
-    if (!expense.date) {
-      expense.date = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
-    }
-
-    const newExpense = {
-      ...expense,
-      id: Date.now().toString() // Gera um ID único baseado no timestamp
-    };
-
-    this.expenses.push(newExpense);
-
-    // Em um caso real, aqui você inseriria o dado no banco de dados
-    // await db.collection('expenses').insertOne(newExpense);
-
-    return newExpense;
-  }
-
-  async queryExpenses(filters: {
-    category?: string;
-    startDate?: string;
-    endDate?: string;
-    minAmount?: number;
-    maxAmount?: number;
-  }): Promise<Expense[]> {
-    // Filtrar os gastos com base nos critérios fornecidos
-    return this.expenses.filter(expense => {
-      if (filters.category && expense.category !== filters.category) {
-        return false;
-      }
-
-      if (filters.startDate && expense.date < filters.startDate) {
-        return false;
-      }
-
-      if (filters.endDate && expense.date > filters.endDate) {
-        return false;
-      }
-
-      if (filters.minAmount !== undefined && expense.amount < filters.minAmount) {
-        return false;
-      }
-
-      if (filters.maxAmount !== undefined && expense.amount > filters.maxAmount) {
-        return false;
-      }
-
-      return true;
-    });
-  }
-
-  async getAllExpenses(): Promise<Expense[]> {
-    return this.expenses;
-  }
 }
