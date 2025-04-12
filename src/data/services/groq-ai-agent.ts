@@ -180,6 +180,10 @@ export class GroqAiAgent implements IAAgent {
           },
           {
             role: "system",
+            content: "Sempre que o usuário solicitar os gastos de forma genérica, retorne os gastos dos últimos 30 dias. Caso o usuário solicite os gastos de forma específica, retorne os gastos com base nos parâmetros informados."
+          },
+          {
+            role: "system",
             content: "Extraia os parâmetros de consulta da mensagem do usuário e retorne apenas um objeto JSON com os campos: category (string, opcional), startDate (string no formato YYYY-MM-DD, opcional), endDate (string no formato YYYY-MM-DD, opcional), minAmount (number, opcional), maxAmount (number, opcional), description (string, opcional). Se o usuário mencionar períodos como 'este mês', 'hoje', 'última semana', converta para datas reais."
           },
           {

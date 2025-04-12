@@ -3,13 +3,13 @@ import { Expense } from "../../domain/models/expense";
 
 // Interface para os filtros de despesas
 export interface ExpenseFilters {
-  id?: string;
-  category?: string;
-  startDate?: Date | string;  // Permitir ambos os tipos
-  endDate?: Date | string;    // Permitir ambos os tipos
-  minAmount?: number;
-  maxAmount?: number;
-  description?: string;
+  id?: string | null;
+  category?: string| null;
+  startDate?: Date | string| null;  // Permitir ambos os tipos
+  endDate?: Date | string| null;    // Permitir ambos os tipos
+  minAmount?: number| null;
+  maxAmount?: number| null;
+  description?: string| null;
 }
 
 export interface ExpensesDatasource {
