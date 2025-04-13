@@ -140,9 +140,6 @@ export class SqliteExpensesDatasource implements ExpensesDatasource {
         params.push(`%${filters.description}%`) // Busca parcial
       }
 
-      console.log('Query SQL:', query) // Debug
-      console.log('Parâmetros:', params) // Debug
-
       this._sqliteDatabase.all(query, params,
         (err: Error | null, rows: Array<{ id: string, description: string, amount: number, date: string, category: string, userId: string }>) => {
           if (err != null) {
