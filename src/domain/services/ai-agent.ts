@@ -1,3 +1,3 @@
 export interface IAAgent {
-  handleMessage: (message: string) => Promise<string>;
+  handleMessage: (message: string, userId: string) => Promise<string>
 }

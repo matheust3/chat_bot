@@ -12,7 +12,7 @@ export class GroqAiAgent implements IAAgent {
     this.expenseDb = db
   }
 
-  async handleMessage (message: string): Promise<string> {
+  async handleMessage (message: string, userId: string): Promise<string> {
     // Primeiro, determine a intenção usando um modelo LLM
     const intentResponse = await this.client.chat.completions.create({
       model: process.env.BASIC_MODEL ?? 'llama3-8b-8192',
@@ -75,7 +75,7 @@ export class GroqAiAgent implements IAAgent {
             id: new Date().toISOString() + Math.random().toString(36).substring(2, 15) // Gerar um ID único,
           }
 
-          const expense = await this.expenseDb.saveExpense(expenseToSave)
+          const expense = await this.expenseDb.saveExpense(expenseToSave, userId)
           return `✅ Gasto salvo: ${expense.description} - R$ ${expense.amount} (${(expense.category === null || expense.category === undefined || expense.category === '') ? 'Sem categoria' : expense.category})`
         }
       } catch (e) {
@@ -92,7 +92,7 @@ export class GroqAiAgent implements IAAgent {
       const recentExpenses = await this.expenseDb.getExpenses({
         startDate: thirtyDaysAgo,
         endDate: today
-      })
+      }, userId)
 
       // Formatar a lista de gastos recentes como contexto
       let recentExpensesContext = 'Lista de gastos recentes, para consultar os ids:\n'
@@ -154,7 +154,7 @@ export class GroqAiAgent implements IAAgent {
           }
 
           // Atualizar o gasto
-          await this.expenseDb.updateExpense(updatedExpense)
+          await this.expenseDb.updateExpense(updatedExpense, userId)
 
           // Formatar resposta com as alterações realizadas
           const changes: string[] = []
@@ -200,7 +200,7 @@ export class GroqAiAgent implements IAAgent {
         console.log('Parâmetros de consulta extraídos:', queryParams)
 
         // Consultar o banco de dados
-        const expenses = await this.expenseDb.getExpenses(queryParams)
+        const expenses = await this.expenseDb.getExpenses(queryParams, userId)
 
         if (expenses.length === 0) {
           return 'Nenhum gasto encontrado com os critérios informados.'
