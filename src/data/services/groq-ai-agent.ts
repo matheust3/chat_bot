@@ -199,23 +199,61 @@ export class GroqAiAgent implements IAAgent {
         const queryParams = this.extractJsonFromText<ExpenseFilters>(queryExtractionResponse.choices[0].message.content ?? '{}') ?? {}
         console.log('Parâmetros de consulta extraídos:', queryParams)
 
+        // Se não houver datas especificadas, definir padrão para os últimos 30 dias
+        if (queryParams.startDate === undefined || queryParams.startDate === null) {
+          const thirtyDaysAgo = new Date()
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+          queryParams.startDate = thirtyDaysAgo.toISOString().split('T')[0]
+        }
+
+        if (queryParams.endDate === undefined || queryParams.endDate === null) {
+          queryParams.endDate = new Date().toISOString().split('T')[0]
+        }
+
         // Consultar o banco de dados
         const expenses = await this.expenseDb.getExpenses(queryParams, userId)
 
         if (expenses.length === 0) {
-          return 'Nenhum gasto encontrado com os critérios informados.'
+          // Incluir o período mesmo quando não há resultados
+          const startFormatted = new Date(queryParams.startDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+          const endFormatted = new Date(queryParams.endDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+          return `Nenhum gasto encontrado no período de ${startFormatted} até ${endFormatted}.`
         }
 
-        let response = 'Aqui estão os gastos encontrados:\n'
+        // Determinar formato de exibição do período
+        const startDate = new Date(queryParams.startDate)
+        const endDate = new Date(queryParams.endDate)
+        const startFormatted = startDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        const endFormatted = endDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+
+        // Criar mensagem do período
+        const periodMessage = startFormatted === endFormatted
+          ? `no dia ${startFormatted}`
+          : `no período de ${startFormatted} até ${endFormatted}`
+
+        // Adicionar categoria à mensagem se especificada
+        const categoryMessage = queryParams.category !== null && queryParams.category !== undefined && queryParams.category !== ''
+          ? ` na categoria "${queryParams.category}"`
+          : ''
+
+        let response = `📊 Gastos ${periodMessage}${categoryMessage}:\n\n`
         let total = 0
         expenses.forEach(expense => {
-          response += `- ${expense.description}: R$ ${expense.amount} (${expense.category ?? 'Sem categoria'}) em ${expense.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}\n`
+          response += `- ${expense.description}: R$ ${expense.amount.toFixed(2)} (${expense.category ?? 'Sem categoria'}) em ${expense.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}\n`
           total += expense.amount
         })
-        response += `\n*Total: R$ ${total.toFixed(2)}*`
+        response += `\n💰 **Total: R$ ${total.toFixed(2)}**`
+
+        // Adicionar média diária se o período for maior que um dia
+        if (startFormatted !== endFormatted) {
+          const days = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+          const dailyAverage = total / days
+          response += `\n📅 **Média diária: R$ ${dailyAverage.toFixed(2)}**`
+        }
 
         return response
       } catch (e) {
+        console.error('Erro ao processar consulta:', e)
         // Falha ao parsear JSON
       }
 
