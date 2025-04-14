@@ -23,7 +23,7 @@ export class GroqAiAgent implements IAAgent {
         },
         {
           role: 'system',
-          content: 'Classifique a intenção do usuário em uma das seguintes categorias: ADD_EXPENSE, EDIT_EXPENSE, QUERY_EXPENSES, ou OTHER. Responda apenas retornando um objeto JSON com a intenção, sem explicações adicionais. Exemplo: {"intent": "ADD_EXPENSE"}'
+          content: 'Classifique a intenção do usuário em uma das seguintes categorias: ADD_EXPENSE, EDIT_EXPENSE, DELETE_EXPENSE, QUERY_EXPENSES, ou OTHER. Responda apenas retornando um objeto JSON com a intenção, sem explicações adicionais. Exemplo: {"intent": "ADD_EXPENSE"}'
         },
         {
           role: 'user',
@@ -319,6 +319,81 @@ export class GroqAiAgent implements IAAgent {
       }
 
       return 'Não consegui gerar os relatórios de despesas. Por favor, tente novamente.'
+    } else if (intent?.intent?.includes('DELETE_EXPENSE') === true) {
+      // Primeiro, busque os gastos dos últimos 30 dias para fornecer como contexto
+      const today = new Date()
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(today.getDate() - 30)
+
+      const recentExpenses = await this.expenseDb.getExpenses({
+        startDate: thirtyDaysAgo,
+        endDate: today
+      }, userId)
+
+      // Formatar a lista de gastos recentes como contexto
+      let recentExpensesContext = 'Lista de gastos recentes, para consultar os ids:\n'
+      recentExpenses.forEach((expense, index) => {
+        // Aplicar capitalização na exibição para o LLM
+        const formattedDescription = this.capitalizeWords(expense.description)
+        const formattedCategory = (expense.category.length > 0) ? this.capitalizeWords(expense.category) : 'Sem categoria'
+
+        recentExpensesContext += `ID: ${expense.id} | ${formattedDescription} - R$ ${expense.amount} (${formattedCategory}) - ${expense.date.toLocaleDateString('pt-BR')}\n`
+      })
+
+      console.log(recentExpensesContext)
+
+      // Extrair ID do gasto a ser excluído
+      const deleteExtractionResponse = await this.client.chat.completions.create({
+        model: process.env.BASIC_MODEL ?? 'llama3-8b-8192',
+        messages: [
+          {
+            role: 'system',
+            content: 'Você é um assistente financeiro. Sua tarefa é ajudar o usuário a excluir gastos existentes.'
+          },
+          {
+            role: 'system',
+            content: recentExpensesContext
+          },
+          {
+            role: 'system',
+            content: 'Com base na lista de gastos recentes acima, extraia o ID exato do gasto que o usuário deseja excluir. Responda apenas com um objeto JSON contendo o campo expenseId. NUNCA invente um ID, deve ser exatamente igual a um ID da lista. Exemplo de resposta: {"expenseId": "id-do-gasto-aqui"}'
+          },
+          {
+            role: 'user',
+            content: message
+          }
+        ]
+      })
+
+      try {
+        const deleteData = this.extractJsonFromText<{
+          expenseId?: string | null
+        }>(deleteExtractionResponse.choices[0].message.content ?? '')
+
+        console.log('Dados de exclusão extraídos:', deleteData)
+
+        if (deleteData?.expenseId !== undefined && deleteData?.expenseId !== null) {
+          // Procurar o gasto pelo ID
+          const expenseToDelete = recentExpenses.find(expense => expense.id === deleteData.expenseId)
+
+          if (expenseToDelete == null) {
+            return `Não encontrei nenhum gasto com o ID "${deleteData.expenseId}". Por favor, verifique o ID e tente novamente.`
+          }
+
+          // Formatar os dados para exibição na confirmação
+          const formattedDescription = this.capitalizeWords(expenseToDelete.description)
+          const formattedCategory = (expenseToDelete.category.length > 0) ? this.capitalizeWords(expenseToDelete.category) : 'Sem categoria'
+
+          // Excluir o gasto
+          await this.expenseDb.deleteExpense(deleteData.expenseId, userId)
+
+          return `✅ Gasto excluído com sucesso: ${formattedDescription} - R$ ${expenseToDelete.amount} (${formattedCategory})`
+        }
+      } catch (e) {
+        console.error('Erro ao processar exclusão:', e)
+      }
+
+      return 'Não consegui identificar qual gasto você deseja excluir. Por favor, especifique melhor ou forneça o ID do gasto.'
     }
 
     // Resposta genérica para outras intenções
