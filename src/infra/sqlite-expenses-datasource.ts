@@ -113,11 +113,13 @@ export class SqliteExpensesDatasource implements ExpensesDatasource {
       }
 
       if (filters.endDate !== undefined && filters.endDate !== null) {
-        // Converter para ISO se for um objeto Date
-        const endTimestamp = new Date(filters.endDate).getTime()
+        // Converter para timestamp do final do dia
+        const endDate = new Date(filters.endDate)
+        endDate.setHours(23, 59, 59, 999) // Final do dia
+        const endTimestamp = endDate.getTime()
+
         query += ' AND date <= ?'
         params.push(endTimestamp)
-        console.log('Filtrando por data final:', endTimestamp) // Debug
       }
 
       if (filters.id !== undefined && filters.id !== null) {
