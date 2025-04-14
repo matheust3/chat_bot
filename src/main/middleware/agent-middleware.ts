@@ -24,7 +24,7 @@ const subscriptionsRepository = new SubscriptionsRepositoryImpl(paymentService)
 const demoAgent = new DemoAgentImpl(aiAgent, subscriptionsRepository)
 
 export default async (message: IMessage, client: IClient, next: () => void): Promise<void> => {
-  if (!message.isCommand && !message.fromMe && message.chatId === '556592203136@c.us' && message.body.trim().length > 0) {
+  if (!message.isCommand && !message.fromMe && message.groupId === undefined && message.body.trim().length > 0) {
     const userId = message.sender
     if (!tablesCreated) {
       await expanseDb.createTables()
