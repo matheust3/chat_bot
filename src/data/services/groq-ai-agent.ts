@@ -73,14 +73,21 @@ export class GroqAiAgent implements IAAgent {
         if (extractedJson.description !== null && extractedJson.description !== undefined && extractedJson.amount !== null && extractedJson.amount !== undefined) {
           const expenseToSave: Expense = {
             amount: Number(extractedJson.amount),
-            description: extractedJson.description,
+            description: extractedJson.description.toLowerCase(), // Salvar em minúsculas
             date: extractedJson.date !== null && extractedJson.date !== undefined ? new Date(extractedJson.date) : new Date(),
-            category: extractedJson.category !== undefined && extractedJson.category !== null ? extractedJson.category : 'Outros',
+            category: (extractedJson.category !== undefined && extractedJson.category !== null)
+              ? extractedJson.category.toLowerCase()
+              : 'outros', // Categoria em minúsculas
             id: new Date().toISOString() + Math.random().toString(36).substring(2, 15) // Gerar um ID único,
           }
 
           const expense = await this.expenseDb.saveExpense(expenseToSave, userId)
-          return `✅ Gasto salvo: ${expense.description} - R$ ${expense.amount} (${(expense.category === null || expense.category === undefined || expense.category === '') ? 'Sem categoria' : expense.category})`
+
+          // Capitalizar primeira letra de cada palavra para exibição
+          const formattedDescription = this.capitalizeWords(expense.description)
+          const formattedCategory = (expense.category.length > 0) ? this.capitalizeWords(expense.category) : 'Sem categoria'
+
+          return `✅ Gasto salvo: ${formattedDescription} - R$ ${expense.amount} (${formattedCategory})`
         }
       } catch (e) {
         // Falha ao parsear JSON
@@ -213,6 +220,10 @@ export class GroqAiAgent implements IAAgent {
         ) ?? {}
         console.log('Parâmetros de filtro extraídos:', filterParams)
 
+        // Converter parâmetros de filtro para minúsculas para busca
+        if (filterParams.category != null) filterParams.category = filterParams.category.toLowerCase()
+        if (filterParams.description != null) filterParams.description = filterParams.description.toLowerCase()
+
         // Buscar despesas da semana
         const weeklyExpenses = await this.expenseDb.getExpenses({
           ...filterParams,
@@ -238,7 +249,11 @@ export class GroqAiAgent implements IAAgent {
         } else {
           let weeklyTotal = 0
           weeklyExpenses.forEach(expense => {
-            weeklyReport += `- ${expense.description}: R$ ${expense.amount.toFixed(2)} (${expense.category ?? 'Sem categoria'}) em ${expense.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}\n`
+            // Aplicar capitalização à descrição e categoria
+            const formattedDescription = this.capitalizeWords(expense.description)
+            const formattedCategory = (expense.category.length > 0) ? this.capitalizeWords(expense.category) : 'Sem categoria'
+
+            weeklyReport += `- ${formattedDescription}: R$ ${expense.amount.toFixed(2)} (${formattedCategory}) em ${expense.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}\n`
             weeklyTotal += expense.amount
           })
 
@@ -263,7 +278,7 @@ export class GroqAiAgent implements IAAgent {
           const categorySums: { [key: string]: number } = {}
 
           monthlyExpenses.forEach(expense => {
-            const category = expense.category ?? 'Sem categoria'
+            const category = expense.category ?? 'sem categoria'
             if (categorySums[category] === undefined) {
               categorySums[category] = 0
             }
@@ -273,7 +288,9 @@ export class GroqAiAgent implements IAAgent {
 
           // Mostrar total por categoria
           Object.entries(categorySums).forEach(([category, sum]) => {
-            monthlyReport += `- ${category}: R$ ${(sum).toFixed(2)}\n`
+            // Capitalizar nomes das categorias
+            const formattedCategory = this.capitalizeWords(category)
+            monthlyReport += `- ${formattedCategory}: R$ ${(sum).toFixed(2)}\n`
           })
 
           const days = Math.max(1, Math.round((today.getTime() - startOfMonth.getTime()) / (1000 * 60 * 60 * 24)))
@@ -285,8 +302,16 @@ export class GroqAiAgent implements IAAgent {
 
         // Filtro aplicado (se houver)
         let filterMessage = ''
-        if (filterParams.category !== null && filterParams.category !== undefined && filterParams.category !== '') filterMessage += `\n\n⚠️ Filtro aplicado: Categoria "${filterParams.category}"`
-        if (filterParams.description !== null && filterParams.description !== undefined && filterParams.description !== '') filterMessage += `\n\n⚠️ Filtro aplicado: Descrição contendo "${filterParams.description}"`
+        if (filterParams.category !== null && filterParams.category !== undefined && filterParams.category !== '') {
+          // Usar valor original com capitalização para exibição
+          const formattedCategory = this.capitalizeWords(filterParams.category)
+          filterMessage += `\n\n⚠️ Filtro aplicado: Categoria "${formattedCategory}"`
+        }
+        if (filterParams.description !== null && filterParams.description !== undefined && filterParams.description !== '') {
+          // Capitalizar descrição no filtro
+          const formattedDescription = this.capitalizeWords(filterParams.description)
+          filterMessage += `\n\n⚠️ Filtro aplicado: Descrição contendo "${formattedDescription}"`
+        }
 
         return weeklyReport + monthlyReport + filterMessage
       } catch (e) {
@@ -388,5 +413,17 @@ export class GroqAiAgent implements IAAgent {
       console.error('Erro ao tentar extrair JSON:', e)
       return null
     }
+  }
+
+  /**
+   * Capitaliza a primeira letra de cada palavra em uma string
+   * @param text Texto a ser formatado
+   * @returns Texto com a primeira letra de cada palavra em maiúsculo
+   */
+  private capitalizeWords (text: string): string {
+    if (text.length === 0) return ''
+    return text.split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
   }
 }
