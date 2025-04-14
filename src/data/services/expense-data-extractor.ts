@@ -10,12 +10,14 @@ export class ExpenseDataExtractor {
   }
 
   async extractAddExpenseData (message: string): Promise<Partial<Expense>> {
+    const date = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const dateYYYYMMDD = date.split('/').reverse().join('-')
     const response = await this.client.chat.completions.create({
       model: process.env.BASIC_MODEL ?? 'llama3-8b-8192',
       messages: [
         {
           role: 'system',
-          content: 'A data de hoje é ' + new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+          content: 'A data de hoje é ' + date
         },
         {
           role: 'system',
@@ -24,7 +26,11 @@ export class ExpenseDataExtractor {
         {
           role: 'system',
           content:
-            'Extraia as informações de gasto da mensagem do usuário e retorne apenas um objeto JSON com os campos: description (string), amount (number), category (string), date (opcional, formato YYYY-MM-DD). É de extrema importância que as informações estejam no padrão pt-BR.'
+          'Extraia as informações de gasto da mensagem do usuário e retorne apenas um objeto JSON com os campos: description (string), amount (number), category (string), date (opcional, formato YYYY-MM-DD). É de extrema importância que as informações estejam no padrão pt-BR.'
+        },
+        {
+          role: 'system',
+          content: `Por exemplo, se o usuário falar: "gastei hoje 60 reais com almoço", você deve retornar: {"description": "almoço", "amount": 60, "category": "alimentação", "date": "${dateYYYYMMDD}"}`
         },
         {
           role: 'user',
