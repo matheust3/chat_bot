@@ -44,7 +44,11 @@ export class GroqAiAgent implements IAAgent {
         messages: [
           {
             role: 'system',
-            content: 'Você é um assistente financeiro. Sua tarefa é ajudar o usuário a registrar e consultar gastos do usuário. Para titulo de conhecimento essa é a data de hoje: ' + new Date().toISOString().split('T')[0]
+            content: 'A data de hoje é ' + new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+          },
+          {
+            role: 'system',
+            content: 'Você é um assistente financeiro. Sua tarefa é ajudar o usuário a registrar e consultar gastos do usuário'
           },
           {
             role: 'system',
@@ -171,21 +175,29 @@ export class GroqAiAgent implements IAAgent {
 
       return 'Não consegui entender os detalhes da edição. Por favor, especifique qual gasto deseja editar e quais informações deseja alterar.'
     } else if (intent?.intent?.includes('QUERY_EXPENSES') === true) {
-      // Extrair parâmetros de consulta da mensagem
+      // Calcular períodos para relatórios semanal e mensal
+      const today = new Date()
+
+      // Período semanal (domingo até hoje ou início da semana até hoje)
+      const startOfWeek = new Date(today)
+      startOfWeek.setDate(today.getDate() - today.getDay()) // Domingo da semana atual
+      startOfWeek.setHours(0, 0, 0, 0)
+
+      // Período mensal (primeiro dia do mês até hoje)
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+      startOfMonth.setHours(0, 0, 0, 0)
+
+      // Extrair apenas parâmetros de categoria ou descrição, não de período
       const queryExtractionResponse = await this.client.chat.completions.create({
         model: process.env.BASIC_MODEL ?? 'llama3-8b-8192',
         messages: [
           {
             role: 'system',
-            content: 'Você é um assistente financeiro. Sua tarefa é ajudar o usuário a registrar e consultar gastos do usuário. Para titulo de conhecimento essa é a data de hoje: ' + new Date().toISOString().split('T')[0]
+            content: 'Você é um assistente financeiro. Sua tarefa é ajudar o usuário a consultar gastos.'
           },
           {
             role: 'system',
-            content: 'Sempre que o usuário solicitar os gastos de forma genérica, retorne os gastos dos últimos 30 dias. Caso o usuário solicite os gastos de forma específica, retorne os gastos com base nos parâmetros informados.'
-          },
-          {
-            role: 'system',
-            content: "Extraia os parâmetros de consulta da mensagem do usuário e retorne apenas um objeto JSON com os campos: category (string, opcional), startDate (string no formato YYYY-MM-DD, opcional), endDate (string no formato YYYY-MM-DD, opcional), minAmount (number, opcional), maxAmount (number, opcional), description (string, opcional). Se o usuário mencionar períodos como 'este mês', 'hoje', 'última semana', converta para datas reais."
+            content: 'Extraia APENAS os parâmetros de filtro da mensagem do usuário e retorne um objeto JSON com os campos: category (string, opcional), description (string, opcional), minAmount (number, opcional), maxAmount (number, opcional). Não extraia datas ou períodos.'
           },
           {
             role: 'user',
@@ -195,69 +207,93 @@ export class GroqAiAgent implements IAAgent {
       })
 
       try {
-        // Extrair e processar os parâmetros de consulta
-        const queryParams = this.extractJsonFromText<ExpenseFilters>(queryExtractionResponse.choices[0].message.content ?? '{}') ?? {}
-        console.log('Parâmetros de consulta extraídos:', queryParams)
+        // Extrair os parâmetros de filtro (sem datas)
+        const filterParams = this.extractJsonFromText<Partial<ExpenseFilters>>(
+          queryExtractionResponse.choices[0].message.content ?? '{}'
+        ) ?? {}
+        console.log('Parâmetros de filtro extraídos:', filterParams)
 
-        // Se não houver datas especificadas, definir padrão para os últimos 30 dias
-        if (queryParams.startDate === undefined || queryParams.startDate === null) {
-          const thirtyDaysAgo = new Date()
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-          queryParams.startDate = thirtyDaysAgo.toISOString().split('T')[0]
+        // Buscar despesas da semana
+        const weeklyExpenses = await this.expenseDb.getExpenses({
+          ...filterParams,
+          startDate: startOfWeek.toISOString().split('T')[0],
+          endDate: today.toISOString().split('T')[0]
+        }, userId)
+
+        // Buscar despesas do mês
+        const monthlyExpenses = await this.expenseDb.getExpenses({
+          ...filterParams,
+          startDate: startOfMonth.toISOString().split('T')[0],
+          endDate: today.toISOString().split('T')[0]
+        }, userId)
+
+        // Formatar relatório semanal
+        const startWeekFormatted = startOfWeek.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        const endWeekFormatted = today.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+
+        let weeklyReport = `📊 **RELATÓRIO SEMANAL** (${startWeekFormatted} até ${endWeekFormatted}):\n\n`
+
+        if (weeklyExpenses.length === 0) {
+          weeklyReport += 'Nenhum gasto registrado nesta semana.\n\n'
+        } else {
+          let weeklyTotal = 0
+          weeklyExpenses.forEach(expense => {
+            weeklyReport += `- ${expense.description}: R$ ${expense.amount.toFixed(2)} (${expense.category ?? 'Sem categoria'}) em ${expense.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}\n`
+            weeklyTotal += expense.amount
+          })
+
+          const days = Math.max(1, Math.round((today.getTime() - startOfWeek.getTime()) / (1000 * 60 * 60 * 24)))
+          const weeklyAverage = weeklyTotal / days
+
+          weeklyReport += `\n💰 **Total semanal: R$ ${weeklyTotal.toFixed(2)}**`
+          weeklyReport += `\n📅 **Média diária: R$ ${weeklyAverage.toFixed(2)}**\n\n`
         }
 
-        if (queryParams.endDate === undefined || queryParams.endDate === null) {
-          queryParams.endDate = new Date().toISOString().split('T')[0]
+        // Formatar relatório mensal
+        const startMonthFormatted = startOfMonth.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        const endMonthFormatted = today.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+
+        let monthlyReport = `📊 **RELATÓRIO MENSAL** (${startMonthFormatted} até ${endMonthFormatted}):\n\n`
+
+        if (monthlyExpenses.length === 0) {
+          monthlyReport += 'Nenhum gasto registrado neste mês.\n'
+        } else {
+          let monthlyTotal = 0
+          // Agregar gastos por categoria para o relatório mensal
+          const categorySums: { [key: string]: number } = {}
+
+          monthlyExpenses.forEach(expense => {
+            const category = expense.category ?? 'Sem categoria'
+            if (categorySums[category] === undefined) {
+              categorySums[category] = 0
+            }
+            categorySums[category] += expense.amount
+            monthlyTotal += expense.amount
+          })
+
+          // Mostrar total por categoria
+          Object.entries(categorySums).forEach(([category, sum]) => {
+            monthlyReport += `- ${category}: R$ ${(sum).toFixed(2)}\n`
+          })
+
+          const days = Math.max(1, Math.round((today.getTime() - startOfMonth.getTime()) / (1000 * 60 * 60 * 24)))
+          const monthlyAverage = monthlyTotal / days
+
+          monthlyReport += `\n💰 **Total mensal: R$ ${monthlyTotal.toFixed(2)}**`
+          monthlyReport += `\n📅 **Média diária: R$ ${monthlyAverage.toFixed(2)}**`
         }
 
-        // Consultar o banco de dados
-        const expenses = await this.expenseDb.getExpenses(queryParams, userId)
+        // Filtro aplicado (se houver)
+        let filterMessage = ''
+        if (filterParams.category !== null && filterParams.category !== undefined && filterParams.category !== '') filterMessage += `\n\n⚠️ Filtro aplicado: Categoria "${filterParams.category}"`
+        if (filterParams.description !== null && filterParams.description !== undefined && filterParams.description !== '') filterMessage += `\n\n⚠️ Filtro aplicado: Descrição contendo "${filterParams.description}"`
 
-        if (expenses.length === 0) {
-          // Incluir o período mesmo quando não há resultados
-          const startFormatted = new Date(queryParams.startDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-          const endFormatted = new Date(queryParams.endDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-          return `Nenhum gasto encontrado no período de ${startFormatted} até ${endFormatted}.`
-        }
-
-        // Determinar formato de exibição do período
-        const startDate = new Date(queryParams.startDate)
-        const endDate = new Date(queryParams.endDate)
-        const startFormatted = startDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-        const endFormatted = endDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-
-        // Criar mensagem do período
-        const periodMessage = startFormatted === endFormatted
-          ? `no dia ${startFormatted}`
-          : `no período de ${startFormatted} até ${endFormatted}`
-
-        // Adicionar categoria à mensagem se especificada
-        const categoryMessage = queryParams.category !== null && queryParams.category !== undefined && queryParams.category !== ''
-          ? ` na categoria "${queryParams.category}"`
-          : ''
-
-        let response = `📊 Gastos ${periodMessage}${categoryMessage}:\n\n`
-        let total = 0
-        expenses.forEach(expense => {
-          response += `- ${expense.description}: R$ ${expense.amount.toFixed(2)} (${expense.category ?? 'Sem categoria'}) em ${expense.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}\n`
-          total += expense.amount
-        })
-        response += `\n💰 **Total: R$ ${total.toFixed(2)}**`
-
-        // Adicionar média diária se o período for maior que um dia
-        if (startFormatted !== endFormatted) {
-          const days = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
-          const dailyAverage = total / days
-          response += `\n📅 **Média diária: R$ ${dailyAverage.toFixed(2)}**`
-        }
-
-        return response
+        return weeklyReport + monthlyReport + filterMessage
       } catch (e) {
-        console.error('Erro ao processar consulta:', e)
-        // Falha ao parsear JSON
+        console.error('Erro ao processar consulta de despesas:', e)
       }
 
-      return 'Não consegui entender os critérios de consulta. Tente ser mais específico.'
+      return 'Não consegui gerar os relatórios de despesas. Por favor, tente novamente.'
     }
 
     // Resposta genérica para outras intenções
