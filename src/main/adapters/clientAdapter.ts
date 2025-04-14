@@ -30,7 +30,8 @@ export const clientAdapter = (client: Whatsapp): IClient => {
       }
     },
     sendText: async (to: string, content: string, op?: { quotedMsg: string }) => {
-      await client.sendText(to, content, op)
+      const msg = await client.sendText(to, content, op)
+      return msg.id;
     }
   }
 }
