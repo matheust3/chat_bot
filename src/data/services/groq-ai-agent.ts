@@ -47,11 +47,11 @@ export class GroqAiAgent implements IAAgent {
         if (updatedExpense != null) {
           const original = recentExpenses.find(exp => exp.id === editData.expenseId)
           if (original == null) {
-            return `Não foi possível encontrar o gasto original com o ID "${editData.expenseId}". Por favor, verifique o ID e tente novamente.`
+            return 'Não encontrei nenhum gasto com essas informações, seja mais específico.\n\nLembre-se que só é possível editar um gasto por vez.'
           }
           return this.responseFormatter.formatEditExpenseResponse(original, updatedExpense)
         }
-        return `Não encontrei nenhum gasto com o ID "${editData.expenseId}". Por favor, verifique o ID e tente novamente.`
+        return 'Não encontrei nenhum gasto com essas informações, seja mais específico.\n\nLembre-se que só é possível editar um gasto por vez.'
       }
       return 'Não consegui entender os detalhes da edição. Por favor, especifique qual gasto deseja editar e quais informações deseja alterar.'
     }
@@ -66,14 +66,14 @@ export class GroqAiAgent implements IAAgent {
           await this.expenseManager.deleteExpense(deleteData.expenseId, userId)
           const expense = recentExpenses.find(exp => exp.id === deleteData.expenseId)
           if (expense == null) {
-            return `Não foi possível encontrar o gasto com o ID "${deleteData.expenseId}". Por favor, verifique o ID e tente novamente.`
+            return 'Não consegui encontrar o gasto que você quer deletar. Seja mais específico. \n\nLembre-se que só é possível deletar um gasto por vez.'
           }
           return this.responseFormatter.formatDeleteExpenseResponse(expense.description, expense.category)
         } catch (error) {
-          return `Não encontrei nenhum gasto com o ID "${deleteData.expenseId}". Por favor, verifique o ID e tente novamente.`
+          return 'Não consegui encontrar o gasto que você quer deletar. Seja mais específico. \n\nLembre-se que só é possível deletar um gasto por vez.'
         }
       }
-      return 'Não consegui identificar o gasto que você deseja deletar. Por favor, especifique o ID ou descreva o gasto com mais detalhes.'
+      return 'Não consegui identificar o gasto que você deseja deletar. Descreva o gasto com mais detalhes.'
     }
 
     if (intent === 'QUERY_EXPENSES') {
