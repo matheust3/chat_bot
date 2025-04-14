@@ -5,6 +5,11 @@ services:
     build: .
     restart: always
     user: ubuntu
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - BASIC_MODEL=${BASIC_MODEL}
+      - PAGARME_API_KEY=${PAGARME_API_KEY}
+      - PLAN_ID=${PLAN_ID}
     volumes:
       - ${DEV_ROOT_DIR}/dist:/home/developer/dist
       - ${DEV_ROOT_DIR}/assets:/home/developer/assets
