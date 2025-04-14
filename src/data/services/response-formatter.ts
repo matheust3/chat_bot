@@ -10,6 +10,16 @@ export class ResponseFormatter {
     return `✅ Gasto salvo: ${formattedDescription} - R$ ${expense.amount} (${formattedCategory})`
   }
 
+  formatDeleteExpenseResponse (description: string, category?: string | null): string {
+    const formattedDescription = this.capitalizeWords(description)
+    const formattedCategory = typeof category === 'string' && category.trim() !== ''
+      ? this.capitalizeWords(category)
+      : 'Sem categoria'
+
+    const message = (formattedCategory !== 'Sem categoria') ? `${formattedDescription} (${formattedCategory})` : formattedDescription
+    return `✅ "${message}" deletado com sucesso!`
+  }
+
   formatEditExpenseResponse (
     original: Expense,
     updated: Expense

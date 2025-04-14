@@ -100,6 +100,33 @@ export class ExpenseDataExtractor {
     }
   }
 
+  async extractDeleteExpenseData (message: string, recentExpensesContext: string): Promise<{ expenseId?: string }> {
+    const response = await this.client.chat.completions.create({
+      model: process.env.BASIC_MODEL ?? 'llama3-8b-8192',
+      messages: [
+        {
+          role: 'system',
+          content: 'Você é um assistente financeiro. Sua tarefa é ajudar o usuário a deletar gastos existentes.'
+        },
+        {
+          role: 'system',
+          content: recentExpensesContext
+        },
+        {
+          role: 'system',
+          content:
+            'Com base na lista de gastos recentes acima, extraia o ID do gasto que o usuário deseja deletar e retorne apenas um objeto JSON com o campo: expenseId (string - o ID exato do gasto a ser deletado - DEVE SER UM ID DA LISTA DE GASTOS RECENTES, NUNCA INVENTE UM ID). Exemplo: {"expenseId": "abc123"}'
+        },
+        {
+          role: 'user',
+          content: message
+        }
+      ]
+    })
+
+    return JsonExtractor.extract<{ expenseId?: string }>(response.choices[0].message.content ?? '') ?? {}
+  }
+
   private extractJsonFromText<T>(text: string): T | null {
     return JsonExtractor.extract<T>(text)
   }

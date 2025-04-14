@@ -39,6 +39,10 @@ export class ExpenseManager {
     return await this.expenseDb.getExpenses(filters, userId)
   }
 
+  async deleteExpense (expenseId: string, userId: string): Promise<void> {
+    await this.expenseDb.deleteExpense(expenseId, userId)
+  }
+
   async getRecentExpenses (userId: string): Promise<Expense[]> {
     const today = new Date()
     const thirtyDaysAgo = new Date()

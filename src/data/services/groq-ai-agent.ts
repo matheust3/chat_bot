@@ -56,6 +56,26 @@ export class GroqAiAgent implements IAAgent {
       return 'Não consegui entender os detalhes da edição. Por favor, especifique qual gasto deseja editar e quais informações deseja alterar.'
     }
 
+    if (intent === 'DELETE_EXPENSE') {
+      const recentExpenses = await this.expenseManager.getRecentExpenses(userId)
+      const context = this.buildRecentExpensesContext(recentExpenses)
+      const deleteData = await this.expenseDataExtractor.extractDeleteExpenseData(message, context)
+
+      if (deleteData.expenseId != null) {
+        try {
+          await this.expenseManager.deleteExpense(deleteData.expenseId, userId)
+          const expense = recentExpenses.find(exp => exp.id === deleteData.expenseId)
+          if (expense == null) {
+            return `Não foi possível encontrar o gasto com o ID "${deleteData.expenseId}". Por favor, verifique o ID e tente novamente.`
+          }
+          return this.responseFormatter.formatDeleteExpenseResponse(expense.description, expense.category)
+        } catch (error) {
+          return `Não encontrei nenhum gasto com o ID "${deleteData.expenseId}". Por favor, verifique o ID e tente novamente.`
+        }
+      }
+      return 'Não consegui identificar o gasto que você deseja deletar. Por favor, especifique o ID ou descreva o gasto com mais detalhes.'
+    }
+
     if (intent === 'QUERY_EXPENSES') {
       const filters = await this.expenseQueryExtractor.extractQueryFilters(message)
       const today = new Date()

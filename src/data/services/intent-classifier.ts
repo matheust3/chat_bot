@@ -1,7 +1,7 @@
 import Groq from 'groq-sdk'
 import { JsonExtractor } from '../../main/helpers/json-extractor'
 
-export type Intent = 'ADD_EXPENSE' | 'EDIT_EXPENSE' | 'QUERY_EXPENSES' | 'OTHER'
+export type Intent = 'ADD_EXPENSE' | 'EDIT_EXPENSE' | 'QUERY_EXPENSES' | 'DELETE_EXPENSE' | 'OTHER'
 
 export class IntentClassifier {
   private readonly client: Groq
@@ -16,12 +16,13 @@ export class IntentClassifier {
       messages: [
         {
           role: 'system',
-          content: 'Você é um assistente financeiro. Sua tarefa é ajudar o usuário a registrar e consultar gastos.'
+          content: 'Você é um assistente financeiro. Sua tarefa é ajudar o usuário a registrar, editar, consultar ou deletar gastos.'
         },
         {
           role: 'system',
           content:
-            'Classifique a intenção do usuário em uma das seguintes categorias: ADD_EXPENSE, EDIT_EXPENSE, QUERY_EXPENSES, ou OTHER. Responda apenas retornando um objeto JSON com a intenção, sem explicações adicionais. Exemplo: {"intent": "ADD_EXPENSE"}'
+            'Classifique a intenção do usuário em uma das seguintes categorias: ADD_EXPENSE, EDIT_EXPENSE, QUERY_EXPENSES, DELETE_EXPENSE, ou OTHER. ' +
+            'Responda apenas retornando um objeto JSON com a intenção, sem explicações adicionais. Exemplo: {"intent": "ADD_EXPENSE"}'
         },
         {
           role: 'user',
