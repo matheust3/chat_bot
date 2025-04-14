@@ -15,14 +15,11 @@ export class PagarmeService implements PaymentService {
   async createPaymentIntent (userId: string): Promise<PaymentIntent> {
     try {
       const response = await axios.post(
-        `${this.baseUrl}/payment_links`,
+        `${this.baseUrl}/paymentlinks`,
         {
           is_building: false,
           payment_settings: {
             credit_card_settings: {
-              installments_setup: {
-                interest_type: 'simple'
-              },
               operation_type: 'auth_and_capture'
             },
             accepted_payment_methods: ['credit_card'],
@@ -51,19 +48,25 @@ export class PagarmeService implements PaymentService {
       )
 
       const paymentLink = response.data.url
+
       if (paymentLink != null) {
         const paymentIntent = await this.subscriptionDatasource.createPaymentIntent({
           link: paymentLink,
           userId,
-          code: response.data.code,
-          id: response.data.id
+          code: response.data.order_code,
+          id: response.data.id,
+          createdAt: new Date()
         })
         return paymentIntent
       } else {
         throw new Error('Link de pagamento não gerado')
       }
     } catch (error) {
-      console.error('Erro ao criar link de pagamento:', error.response?.data)
+      if (error?.response?.data != null) {
+        console.error('Erro ao criar link de pagamento:', error.response?.data)
+      } else {
+        console.error('Erro ao criar link de pagamento:', error)
+      }
       throw new Error('Falha ao criar link de pagamento')
     }
   }

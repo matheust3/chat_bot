@@ -18,7 +18,8 @@ export class SQLiteSubscriptionDatasource implements SubscriptionDatasource {
         id TEXT PRIMARY KEY,
         link TEXT NOT NULL,
         userId TEXT NOT NULL,
-        code TEXT NOT NULL
+        code TEXT NOT NULL,
+        createdAt INTEGER NOT NULL
       );
       
       CREATE TABLE IF NOT EXISTS subscriptions (
@@ -36,6 +37,7 @@ export class SQLiteSubscriptionDatasource implements SubscriptionDatasource {
       CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
     `, (err) => {
       if (err != null) console.error('Error initializing database:', err)
+      else console.log('Database subscription initialized successfully.')
     })
   }
 
@@ -69,33 +71,52 @@ export class SQLiteSubscriptionDatasource implements SubscriptionDatasource {
 
   // PaymentIntent CRUD operations
   async createPaymentIntent (paymentIntent: PaymentIntent): Promise<PaymentIntent> {
-    const { id, link, userId, code } = paymentIntent
+    const { id, link, userId, code, createdAt } = paymentIntent
+    const createdAtTimestamp = createdAt.getTime()
     await this.run(
-      'INSERT INTO payment_intents (id, link, userId, code) VALUES (?, ?, ?, ?)',
-      [id, link, userId, code]
+      'INSERT INTO payment_intents (id, link, userId, code, createdAt) VALUES (?, ?, ?, ?, ?)',
+      [id, link, userId, code, createdAtTimestamp]
     )
     return paymentIntent
   }
 
+  private getPaymentIntentFromRow (row: any): PaymentIntent | null {
+    if (row === null || row === undefined) return null
+
+    return {
+      ...row,
+      createdAt: row.createdAt != null ? new Date(row.createdAt) : new Date()
+    }
+  }
+
   async getPaymentIntent (id: string): Promise<PaymentIntent | null> {
-    return await this.get<PaymentIntent>(
+    const row = await this.get<any>(
       'SELECT * FROM payment_intents WHERE id = ?',
       [id]
     )
+
+    return this.getPaymentIntentFromRow(row)
   }
 
   async getPaymentIntentByCode (code: string): Promise<PaymentIntent | null> {
-    return await this.get<PaymentIntent>(
+    const row = await this.get<any>(
       'SELECT * FROM payment_intents WHERE code = ?',
       [code]
     )
+
+    return this.getPaymentIntentFromRow(row)
   }
 
   async getPaymentIntentsByUserId (userId: string): Promise<PaymentIntent[]> {
-    return await this.all<PaymentIntent>(
+    const rows = await this.all<any>(
       'SELECT * FROM payment_intents WHERE userId = ?',
       [userId]
     )
+
+    return rows.map(row => ({
+      ...row,
+      createdAt: row.createdAt != null ? new Date(row.createdAt) : new Date()
+    }))
   }
 
   async updatePaymentIntent (id: string, updates: Partial<PaymentIntent>): Promise<PaymentIntent | null> {
@@ -116,6 +137,10 @@ export class SQLiteSubscriptionDatasource implements SubscriptionDatasource {
     if (updates.code !== undefined) {
       updateFields.push('code = ?')
       values.push(updates.code)
+    }
+    if (updates.createdAt !== undefined) {
+      updateFields.push('createdAt = ?')
+      values.push(updates.createdAt.getTime())
     }
 
     if (updateFields.length === 0) return current

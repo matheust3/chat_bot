@@ -3,6 +3,7 @@ export interface PaymentIntent {
   userId: string
   code: string // Code é o identificador do pagamento usado para buscar o pagamento no gateway
   id: string // ID do pagamento no gateway
+  createdAt: Date
 }
 
 export interface Subscription {
