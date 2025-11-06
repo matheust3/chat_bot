@@ -2,7 +2,7 @@ import { IClient } from '../protocols/IClient'
 import { IMessage } from '../protocols/IMessage'
 
 export default async (message: IMessage, client: IClient): Promise<void> => {
-  if (message.fromMe) {
+  if (message.fromAdmin) {
     if (message.command?.command === 'get_message_id') {
       // Verifica se tem uma mensagem quoted
       if (message.quotedMsgId === undefined) {

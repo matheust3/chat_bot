@@ -13,7 +13,7 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
        \`-o\` *->* Não recorta a figurinha
 *#️⃣link ->* Retorna o link do grupo`
 
-    if (message.fromMe) {
+    if (message.fromAdmin) {
       text += `\n\n🎩*Comandos de root*🎩\n 
 *#️⃣block [argumentos] ->* Bloqueia conteúdo de um grupo
         *Argumentos:*
