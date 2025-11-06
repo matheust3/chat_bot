@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import 'dotenv/config'
 import { create, Message } from '@wppconnect-team/wppconnect'
 import path from 'path'
 import { promisify } from 'util'
@@ -38,7 +38,7 @@ chatsDatasource.createTables().then(() => {
           session: 'stickerBot',
           folderNameToken: path.join(__dirname, '/../../database-files/tokens'),
           debug: false,
-          browserArgs: ['--no-sandbox'],
+          browserArgs: ['--no-sandbox']
           // whatsappVersion: '2.3000.1019760984-alpha'
         }).then((client) => {
           // Recebe a mensagem e envia a resposta
