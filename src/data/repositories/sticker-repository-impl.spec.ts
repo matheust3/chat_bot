@@ -3,12 +3,10 @@ import { StickerRepositoryImpl } from './sticker-repository-impl'
 import { CreateStaticStickerDatasource } from '../datasources/create-static-sticker-datasource'
 import { CreateAnimatedStickerDatasource } from '../datasources/create-animated-sticker-datasource'
 import { mock } from 'jest-mock-extended'
-import fs from 'fs'
 import { CheckDataTypeDatasource } from '../datasources/check-data-type-datasource'
 import { Sticker } from '../../domain/models/sticker'
-import path from 'path'
 
-interface SutTipes{
+interface SutTipes {
   stickerRepositoryImpl: StickerRepositoryImpl
   createStaticStickerDatasource: CreateStaticStickerDatasource
   createAnimatedStickerDatasource: CreateAnimatedStickerDatasource
@@ -26,69 +24,48 @@ const makeSut = (): SutTipes => {
 }
 
 describe('StickerRepositoryImpl --> static sticker', () => {
-  test('ensure call createSticker from CreateStaticStickerDatasource if data is a static image', async () => {
+  test('ensure call CreateStaticSticker with correct params', async () => {
     //! Arrange
-    const { createStaticStickerDatasource, stickerRepositoryImpl, checkDataTypeDatasource } = makeSut()
-    const pngBuffer = fs.readFileSync(path.join(__dirname, '/../../../fixtures/png.png'))
-    const base64File = pngBuffer.toString('base64')
-    jest.spyOn(createStaticStickerDatasource, 'createSticker')
+    const { stickerRepositoryImpl, createStaticStickerDatasource, checkDataTypeDatasource } = makeSut()
     jest.spyOn(checkDataTypeDatasource, 'fromBuffer').mockReturnValue(new Promise(resolve => resolve('staticSticker')))
     //! Act
-    await stickerRepositoryImpl.createSticker(base64File)
+    await stickerRepositoryImpl.createSticker(Buffer.from('any buffer').toString('base64'), false)
     //! Assert
-    expect(checkDataTypeDatasource.fromBuffer).toHaveBeenCalledWith(pngBuffer)
-    expect(createStaticStickerDatasource.createSticker).toHaveBeenCalledWith(pngBuffer)
+    expect(createStaticStickerDatasource.createSticker).toHaveBeenCalledWith(Buffer.from('any buffer'), false)
   })
 
-  test('ensure not call createSticker from CreateStaticStickerDatasource if not is a static image', async () => {
+  test('ensure call CreateStaticSticker with resize parameter', async () => {
     //! Arrange
-    const { createStaticStickerDatasource, stickerRepositoryImpl, checkDataTypeDatasource } = makeSut()
-    const pngBuffer = fs.readFileSync(path.join(__dirname, '/../../../fixtures/png.png'))
-    const base64File = pngBuffer.toString('base64')
-    jest.spyOn(createStaticStickerDatasource, 'createSticker')
-    jest.spyOn(checkDataTypeDatasource, 'fromBuffer').mockReturnValue(new Promise(resolve => resolve('invalidSticker')))
+    const { stickerRepositoryImpl, createStaticStickerDatasource, checkDataTypeDatasource } = makeSut()
+    jest.spyOn(checkDataTypeDatasource, 'fromBuffer').mockReturnValue(new Promise(resolve => resolve('staticSticker')))
     //! Act
-    await stickerRepositoryImpl.createSticker(base64File)
+    await stickerRepositoryImpl.createSticker(Buffer.from('any buffer').toString('base64'), true)
     //! Assert
-    expect(checkDataTypeDatasource.fromBuffer).toHaveBeenCalledWith(pngBuffer)
-    expect(createStaticStickerDatasource.createSticker).toHaveBeenCalledTimes(0)
+    expect(createStaticStickerDatasource.createSticker).toHaveBeenCalledWith(Buffer.from('any buffer'), true)
   })
 
-  test('ensure return static sticker if sticker is valid', async () => {
-  //! Arrange
-    const { createStaticStickerDatasource, stickerRepositoryImpl, checkDataTypeDatasource } = makeSut()
-    const pngBuffer = fs.readFileSync(path.join(__dirname, '/../../../fixtures/png.png'))
-    const base64File = pngBuffer.toString('base64')
-    jest.spyOn(createStaticStickerDatasource, 'createSticker').mockReturnValue(new Promise(resolve => resolve('path to image')))
+  test('ensure return path to sticker if sticker is valid', async () => {
+    //! Arrange
+    const { stickerRepositoryImpl, createStaticStickerDatasource, checkDataTypeDatasource } = makeSut()
     jest.spyOn(checkDataTypeDatasource, 'fromBuffer').mockReturnValue(new Promise(resolve => resolve('staticSticker')))
+    jest.spyOn(createStaticStickerDatasource, 'createSticker').mockReturnValue(new Promise(resolve => resolve('path to sticker')))
     //! Act
-    const result = await stickerRepositoryImpl.createSticker(base64File)
+    const result = await stickerRepositoryImpl.createSticker(Buffer.from('any buffer').toString('base64'), false)
     //! Assert
-    expect(result).toEqual({ path: 'path to image', type: 'static', valid: true } as Sticker)
+    const expected: Sticker = { path: 'path to sticker', type: 'static', valid: true }
+    expect(result).toEqual(expected)
   })
-  test('ensure return not valid sticker if sticker is not valid', async () => {
-  //! Arrange
-    const { createStaticStickerDatasource, stickerRepositoryImpl, checkDataTypeDatasource } = makeSut()
-    const pngBuffer = fs.readFileSync(path.join(__dirname, '/../../../fixtures/png.png'))
-    const base64File = pngBuffer.toString('base64')
-    jest.spyOn(createStaticStickerDatasource, 'createSticker').mockReturnValue(new Promise(resolve => resolve(null)))
+
+  test('ensure return invalid sticker if datasource return null', async () => {
+    //! Arrange
+    const { stickerRepositoryImpl, createStaticStickerDatasource, checkDataTypeDatasource } = makeSut()
     jest.spyOn(checkDataTypeDatasource, 'fromBuffer').mockReturnValue(new Promise(resolve => resolve('staticSticker')))
-    //! Act
-    const result = await stickerRepositoryImpl.createSticker(base64File)
-    //! Assert
-    expect(result).toEqual({ path: '', type: 'static', valid: false } as Sticker)
-  })
-  test('ensure return invalid sticker if dataType is invalidSticker', async () => {
-  //! Arrange
-    const { createStaticStickerDatasource, stickerRepositoryImpl, checkDataTypeDatasource } = makeSut()
-    const pngBuffer = fs.readFileSync(path.join(__dirname, '/../../../fixtures/png.png'))
-    const base64File = pngBuffer.toString('base64')
     jest.spyOn(createStaticStickerDatasource, 'createSticker').mockReturnValue(new Promise(resolve => resolve(null)))
-    jest.spyOn(checkDataTypeDatasource, 'fromBuffer').mockReturnValue(new Promise(resolve => resolve('invalidSticker')))
     //! Act
-    const result = await stickerRepositoryImpl.createSticker(base64File)
+    const result = await stickerRepositoryImpl.createSticker(Buffer.from('any buffer').toString('base64'), false)
     //! Assert
-    expect(result).toEqual({ path: '', type: 'static', valid: false } as Sticker)
+    const expected: Sticker = { path: '', type: 'static', valid: false }
+    expect(result).toEqual(expected)
   })
 })
 
@@ -98,9 +75,9 @@ describe('StickerRepositoryImpl --> animated sticker', () => {
     const { stickerRepositoryImpl, createAnimatedStickerDatasource, checkDataTypeDatasource } = makeSut()
     jest.spyOn(checkDataTypeDatasource, 'fromBuffer').mockReturnValue(new Promise(resolve => resolve('stickerAnimated')))
     //! Act
-    await stickerRepositoryImpl.createSticker(Buffer.from('any buffer').toString('base64'))
+    await stickerRepositoryImpl.createSticker(Buffer.from('any buffer').toString('base64'), false)
     //! Assert
-    expect(createAnimatedStickerDatasource.createSticker).toHaveBeenCalledWith(Buffer.from('any buffer'))
+    expect(createAnimatedStickerDatasource.createSticker).toHaveBeenCalledWith(Buffer.from('any buffer'), false)
   })
   test('ensure return path to sticker if sticker is valid', async () => {
     //! Arrange
@@ -108,9 +85,10 @@ describe('StickerRepositoryImpl --> animated sticker', () => {
     jest.spyOn(checkDataTypeDatasource, 'fromBuffer').mockReturnValue(new Promise(resolve => resolve('stickerAnimated')))
     jest.spyOn(createAnimatedStickerDatasource, 'createSticker').mockReturnValue(new Promise(resolve => resolve('path to sticker')))
     //! Act
-    const result = await stickerRepositoryImpl.createSticker(Buffer.from('any buffer').toString('base64'))
+    const result = await stickerRepositoryImpl.createSticker(Buffer.from('any buffer').toString('base64'), false)
     //! Assert
-    expect(result).toEqual({ path: 'path to sticker', type: 'animated', valid: true } as Sticker)
+    const expected: Sticker = { path: 'path to sticker', type: 'animated', valid: true }
+    expect(result).toEqual(expected)
   })
   test('ensure return invalid sticker if datasource return null', async () => {
     //! Arrange
@@ -118,8 +96,9 @@ describe('StickerRepositoryImpl --> animated sticker', () => {
     jest.spyOn(checkDataTypeDatasource, 'fromBuffer').mockReturnValue(new Promise(resolve => resolve('stickerAnimated')))
     jest.spyOn(createAnimatedStickerDatasource, 'createSticker').mockReturnValue(new Promise(resolve => resolve(null)))
     //! Act
-    const result = await stickerRepositoryImpl.createSticker(Buffer.from('any buffer').toString('base64'))
+    const result = await stickerRepositoryImpl.createSticker(Buffer.from('any buffer').toString('base64'), false)
     //! Assert
-    expect(result).toEqual({ path: '', type: 'animated', valid: false } as Sticker)
+    const expected: Sticker = { path: '', type: 'animated', valid: false }
+    expect(result).toEqual(expected)
   })
 })

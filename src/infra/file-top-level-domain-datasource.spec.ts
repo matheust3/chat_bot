@@ -1,10 +1,11 @@
 import { FileTopLevelDomainDatasource } from './file-top-level-domain-datasource'
+import path from 'path'
 
 describe('file-top-level-domain-datasource.spec.ts - getTopLevelDomains', () => {
   let fileTopLevelDomainDatasource: FileTopLevelDomainDatasource
 
   beforeEach(() => {
-    fileTopLevelDomainDatasource = new FileTopLevelDomainDatasource('../../assets/top-level-domains.txt')
+    fileTopLevelDomainDatasource = new FileTopLevelDomainDatasource(path.join(__dirname, '/../../assets/top-level-domains.txt'))
   })
 
   test('ensure return array witch tld', async () => {
