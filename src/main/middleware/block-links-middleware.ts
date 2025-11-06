@@ -22,11 +22,15 @@ export default async (message: IMessage, client: IClient, next: () => void): Pro
         } catch (e) {
           console.log(e)
         }
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        // Bane o usuário que enviou o link
-        await client.ban(chatId, message.sender)
-        // Se for um link, remove a mensagem
-        await client.deleteMessage(chatId, message.id)
+        if (await client.botIsAdmin(chatId)) {
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          // Bane o usuário que enviou o link
+          await client.ban(chatId, message.sender)
+          // Se for um link, remove a mensagem
+          await client.deleteMessage(chatId, message.id)
+        } else {
+          await client.sendText(chatId, 'Não tenho permissão de administrador para banir usuários ou remover mensagens.', { quotedMsg: message.id })
+        }
       } else {
         // Se não for um link, passa para o próximo middleware
         next()
