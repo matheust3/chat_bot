@@ -25,6 +25,7 @@ create({
   session: 'stickerBot',
   folderNameToken: path.join(__dirname, '/../../database-files/tokens'),
   debug: false,
+  headless: false,
   browserArgs: ['--no-sandbox']
 }).then((client) => {
   // Recebe a mensagem e envia a resposta
