@@ -76,7 +76,7 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
     fromMe: message?.fromMe ?? false,
     from: message.from,
     fromAdmin,
-    sender: message.sender.id,
+    sender: message.sender?.id ?? '-',
     groupId,
     chatId: message.chatId,
     caption,
