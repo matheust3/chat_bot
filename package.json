@@ -1,6 +1,6 @@
 {
   "name": "chat_bot",
-  "version": "3.6.5",
+  "version": "3.6.6",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -41,7 +41,7 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "@wppconnect-team/wppconnect": "^1.37.1",
+    "@wppconnect-team/wppconnect": "^1.37.5",
     "axios": "^1.8.4",
     "chmodr": "^1.2.0",
     "dotenv": "^16.5.0",
