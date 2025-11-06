@@ -11,12 +11,8 @@ services:
       - PAGARME_API_KEY=${PAGARME_API_KEY}
       - PLAN_ID=${PLAN_ID}
     volumes:
-      - ${DEV_ROOT_DIR}/dist:/home/developer/dist
-      - ${DEV_ROOT_DIR}/assets:/home/developer/assets
-      - ${DEV_ROOT_DIR}/database-files:/home/developer/database-files
-      - ${DEV_ROOT_DIR}/package.json:/home/developer/package.json
-      - ${DEV_ROOT_DIR}/package-lock.json:/home/developer/package-lock.json
-    command: bash -c "npm i -g npm@10.8.1 && npm install --omit=dev && ls -l .. && npm run start"
+      - ${DEV_ROOT_DIR}:/home/developer/chat
+    command: bash -c "cd chat && npm i -g npm@10.8.1 && npm install && npm run build && ls -l .. && npm run start"
     logging:
       options:
         max-size: "10m"

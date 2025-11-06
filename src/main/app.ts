@@ -24,28 +24,17 @@ setInterval(() => {
   }
 }, 900000)
 
-const chatsDatasource = new ChatsDatasourceImpl(new Database(path.join(__dirname, '../../database-files/chats.db')))
-chatsDatasource.createTables().then(() => {
-  console.log('Tabelas criadas')
-  chatsDatasource.close().then(() => {
-    console.log('Conexão com o banco de dados liberada para o uso do bot')
-    // Carrega os middlewares e os comandos
-    middlewares().then((middlewares) => {
-      console.log('Middlewares carregados')
-      commands().then((commands) => {
-        console.log('Comandos carregados')
-        create({
-          session: 'stickerBot',
-          folderNameToken: path.join(__dirname, '/../../database-files/tokens'),
-          debug: false,
-          browserArgs: ['--no-sandbox'],
-          // whatsappVersion: '2.3000.1019760984-alpha'
-        }).then((client) => {
-          // Recebe a mensagem e envia a resposta
-          client.onAnyMessage((message: Message & { quotedParticipant: string }) => {
-            (async () => {
-              const msg = await messageAdapter(message, client)
-              const cli = clientAdapter(client)
+create({
+  session: 'stickerBot',
+  folderNameToken: path.join(__dirname, '/../../database-files/tokens'),
+  debug: false,
+  headless: true,
+  browserArgs: ['--no-sandbox']
+}).then((client) => {
+  // Recebe a mensagem e envia a resposta
+  client.onAnyMessage((message) => {
+    const msg = messageAdapter(message)
+    const cli = clientAdapter(client)
 
               let next = true
               const nextFunction = (): void => {
