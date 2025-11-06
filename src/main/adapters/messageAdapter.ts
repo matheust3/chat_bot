@@ -49,9 +49,11 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
     // Check if the message is from an admin
     const adminsWid: Wid[] = await client.getGroupAdmins(groupId)
     for (const admin of adminsWid) {
-      if (admin._serialized === message.sender.id) {
-        fromAdmin = true
-        break
+      if (message.sender?.id !== undefined && message.sender?.id !== null) {
+        if (admin._serialized === message.sender.id) {
+          fromAdmin = true
+          break
+        }
       }
     }
   }
