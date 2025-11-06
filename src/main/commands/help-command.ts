@@ -21,6 +21,7 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
 *#️⃣debug [argumentos] ->* Bloqueia conteúdo de um grupo
         *Argumentos:*
         \`-message\` *->* Usado para analisar mensagens
+        \`-bot_admin\` *->* Verifica se o bot é admin do grupo
 *#️⃣group_info [argumentos] ->* Retorna informações do grupo
        *Argumentos:*
        \`-id\` *->* Retorna o ID do grupo

@@ -4,6 +4,10 @@ export interface IClient {
    */
   ban: (chatId: string, contactId: string) => Promise<void>
   /**
+   * Indica se o bot é admin do grupo
+   */
+  botIsAdmin: (groupId: string) => Promise<boolean>
+  /**
    * Deleta uma mensagem
    *
    * @param chatId Id do chat
