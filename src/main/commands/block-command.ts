@@ -3,7 +3,7 @@ import { IMessage } from '../protocols/IMessage'
 import { ChatsRepositoryInstance } from '../singletons/chats-repository-instance'
 
 export default async (message: IMessage, client: IClient): Promise<void> => {
-  if (message.fromMe) {
+  if (message.fromAdmin) {
     if (message.command?.command === 'block') {
       if (message.groupId === undefined) {
         await client.sendText(message.from, 'Esse comando só pode ser usado em grupos', { quotedMsg: message.id })

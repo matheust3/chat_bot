@@ -7,6 +7,10 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
       if (message.groupId === undefined) {
         await client.sendText(message.from, 'Esse comando só pode ser usado em grupos', { quotedMsg: message.id })
       } else {
+        if (!await client.botIsAdmin(message.groupId)) {
+          await client.sendText(message.groupId, 'Eu preciso ser administrador para executar esse comando', { quotedMsg: message.id })
+          return
+        }
         const quotedMsgId = message.quotedMsgId
         if (quotedMsgId === undefined) {
           await client.sendText(message.groupId, 'Você precisa responder a mensagem de quem deseja banir', { quotedMsg: message.id })
@@ -17,7 +21,7 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
           } else {
             await client.sendText(message.groupId, 'Você foi banido por esse motivo', { quotedMsg: quotedMsgId })
             await new Promise(resolve => setTimeout(resolve, 2000))
-            await client.ban(message.groupId, quotedMsg.from)
+            await client.ban(message.groupId, quotedMsg.sender)
           }
         }
       }

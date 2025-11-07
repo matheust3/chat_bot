@@ -6,7 +6,7 @@ import { IMiddlewareHandler } from '../protocols/IMiddlewareHandle'
 export default async (): Promise<IMiddlewareHandler[]> => {
   const commands: IMiddlewareHandler[] = []
   // Carrega todos os arquivos de rotas
-  const files = fg.sync('./../**/middleware/**/**middleware.*', { cwd: __dirname })
+  const files = fg.sync('./../**/middleware/**/**-middleware.*', { cwd: __dirname })
 
   for (const file of files) {
     if (!file.endsWith('.test.ts')) {
