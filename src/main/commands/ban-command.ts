@@ -21,7 +21,7 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
           } else {
             await client.sendText(message.groupId, 'Você foi banido por esse motivo', { quotedMsg: quotedMsgId })
             await new Promise(resolve => setTimeout(resolve, 2000))
-            await client.ban(message.groupId, quotedMsg.from)
+            await client.ban(message.groupId, quotedMsg.sender)
           }
         }
       }

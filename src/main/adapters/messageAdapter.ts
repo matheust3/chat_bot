@@ -18,6 +18,7 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
   // Create a closure to maintain the cached quotedMsg
   let cachedQuotedMsg: IMessage | undefined
   let fromAdmin = false
+  let senderId = ''
 
   const body = message.body ?? ''
   const caption = message.caption
@@ -54,6 +55,12 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
           fromAdmin = true
           break
         }
+        const sender = message.sender as unknown as { id: { _serialized: string } }
+
+        if (admin._serialized === sender.id._serialized) {
+          fromAdmin = true
+          break
+        }
       }
     }
   }
@@ -69,6 +76,13 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
     message.chatId = message.chatId._serialized
   }
 
+  if (typeof message.sender.id !== 'string') {
+    const sender = message.sender as unknown as { id: { _serialized: string } }
+    senderId = sender.id._serialized ?? ''
+  } else {
+    senderId = message.sender?.id ?? ''
+  }
+
   return {
     id: message.id,
     body: message.body ?? '',
@@ -76,7 +90,7 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
     fromMe: message?.fromMe ?? false,
     from: message.from,
     fromAdmin,
-    sender: message.sender?.id ?? '-',
+    sender: senderId,
     groupId,
     chatId: message.chatId,
     caption,
