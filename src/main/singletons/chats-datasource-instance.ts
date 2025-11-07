@@ -9,7 +9,14 @@ class Singleton {
 
   constructor (database: Database) {
     if (Singleton.instance === undefined) {
-      Singleton.instance = new ChatsDatasourceImpl(database)
+      const impl = new ChatsDatasourceImpl(database)
+      Singleton.instance = impl
+      // create tables asynchronously and surface any errors to the console
+      // we don't await here so getInstance remains synchronous
+      impl.createTables().catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error('Erro ao criar as tabelas no datasource', err)
+      })
     }
     return Singleton.instance
   }

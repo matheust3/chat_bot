@@ -6,6 +6,17 @@ export const clientAdapter = (client: Whatsapp): IClient => {
     ban: async (chatId: string, contactId: string) => {
       await client.removeParticipant(chatId, contactId)
     },
+    botIsAdmin: async (groupId: string) => {
+      const group = await client.getGroupAdmins(groupId)
+      // Pega os dados dos contatos do grupo
+      for (const admin of group) {
+        const contact = await client.getContact(admin._serialized)
+        if (contact.isMe) {
+          return true
+        }
+      }
+      return false
+    },
     downloadFile: async (messageId: string) => {
       // Pega a mensagem
       const message = await client.getMessageById(messageId)
@@ -31,7 +42,7 @@ export const clientAdapter = (client: Whatsapp): IClient => {
     },
     sendText: async (to: string, content: string, op?: { quotedMsg: string }) => {
       const msg = await client.sendText(to, content, op)
-      return msg.id;
+      return msg.id
     }
   }
 }

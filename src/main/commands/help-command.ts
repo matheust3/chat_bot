@@ -13,7 +13,7 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
        \`-o\` *->* Não recorta a figurinha
 *#️⃣link ->* Retorna o link do grupo`
 
-    if (message.fromMe) {
+    if (message.fromAdmin) {
       text += `\n\n🎩*Comandos de root*🎩\n 
 *#️⃣block [argumentos] ->* Bloqueia conteúdo de um grupo
         *Argumentos:*
@@ -21,6 +21,7 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
 *#️⃣debug [argumentos] ->* Bloqueia conteúdo de um grupo
         *Argumentos:*
         \`-message\` *->* Usado para analisar mensagens
+        \`-bot_admin\` *->* Verifica se o bot é admin do grupo
 *#️⃣group_info [argumentos] ->* Retorna informações do grupo
        *Argumentos:*
        \`-id\` *->* Retorna o ID do grupo
