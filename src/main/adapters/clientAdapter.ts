@@ -23,6 +23,15 @@ export const clientAdapter = (client: Whatsapp): IClient => {
       // Faz o download do arquivo
       return await client.decryptFile(message)
     },
+    getContactName: async (contactId: string) => {
+      const contact = await client.getContact(contactId)
+      return contact?.pushname ?? contact?.name ?? contact?.shortName ?? contact?.formattedName
+    },
+    getChatName: async (chatId: string) => {
+      const chat = await client.getChatById(chatId)
+      const chatData = chat as unknown as { name?: string, formattedTitle?: string, title?: string }
+      return chatData?.name ?? chatData?.formattedTitle ?? chatData?.title
+    },
     getGroupInviteLink: async (chatId: string) => {
       return await client.getGroupInviteLink(chatId)
     },

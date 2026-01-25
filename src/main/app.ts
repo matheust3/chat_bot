@@ -38,7 +38,10 @@ create({
   folderNameToken: path.join(__dirname, '/../../database-files/tokens'),
   debug: false,
   headless: true,
-  browserArgs: ['--no-sandbox']
+  browserArgs: ['--no-sandbox'],
+  puppeteerOptions: {
+    protocolTimeout: 120000
+  }
 }).then(async (client) => {
   // Recebe a mensagem e envia a resposta
   client.onAnyMessage((message: Message) => {

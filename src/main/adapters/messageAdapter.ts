@@ -13,12 +13,14 @@ interface IOriginQuotedMsg {
 
 export const messageAdapter = async (message: Message & { fromMe?: boolean, caption?: string, quotedMsg?: IOriginQuotedMsg, quotedParticipant: string }, client: Whatsapp): Promise<IMessage> => {
   let groupId: string | undefined
+  let groupName: string | undefined
   let command: ICommand | undefined
   let messageType: IMessageType = IMessageType.CHAT
   // Create a closure to maintain the cached quotedMsg
   let cachedQuotedMsg: IMessage | undefined
   let fromAdmin = false
   let senderId = ''
+  let senderName: string | undefined
 
   const body = message.body ?? ''
   const caption = message.caption
@@ -47,6 +49,8 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
     } else {
       groupId = message.chatId._serialized
     }
+    const chat = message as unknown as { chat?: { name?: string } }
+    groupName = chat.chat?.name
     // Check if the message is from an admin
     const adminsWid: Wid[] = await client.getGroupAdmins(groupId)
     for (const admin of adminsWid) {
@@ -65,6 +69,14 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
     }
   }
 
+  const timestampCandidate = (message as unknown as { t?: number, timestamp?: number, createdAt?: number, date?: number })
+  const rawTimestamp = timestampCandidate.timestamp ?? timestampCandidate.t ?? timestampCandidate.createdAt ?? timestampCandidate.date
+  let sentAt: Date | undefined
+  if (typeof rawTimestamp === 'number') {
+    const ms = rawTimestamp < 1000000000000 ? rawTimestamp * 1000 : rawTimestamp
+    sentAt = new Date(ms)
+  }
+
   // Check the message type
   for (const key in IMessageType) {
     if (message.type === IMessageType[key]) {
@@ -76,11 +88,16 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
     message.chatId = message.chatId._serialized
   }
 
-  if (typeof message.sender.id !== 'string') {
-    const sender = message.sender as unknown as { id: { _serialized: string } }
-    senderId = sender.id._serialized ?? ''
-  } else {
-    senderId = message.sender?.id ?? ''
+  if (message.sender != null) {
+    if (typeof message.sender.id !== 'string') {
+      const sender = message.sender as unknown as { id: { _serialized: string } }
+      senderId = sender.id._serialized ?? ''
+    } else {
+      senderId = message.sender?.id ?? ''
+    }
+
+    const senderCandidate = message.sender as unknown as { pushname?: string, name?: string, shortName?: string, formattedName?: string }
+    senderName = senderCandidate.pushname ?? senderCandidate.name ?? senderCandidate.shortName ?? senderCandidate.formattedName
   }
 
   return {
@@ -91,11 +108,14 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
     from: message.from,
     fromAdmin,
     sender: senderId,
+    senderName,
     groupId,
+    groupName,
     chatId: message.chatId,
     caption,
     isCommand: command !== undefined,
     quotedMsgId: message.quotedMsgId as unknown as string | undefined,
+    sentAt,
     get quotedMsg (): Promise<IMessage | undefined> {
       return (async () => {
         if (cachedQuotedMsg !== undefined) {
