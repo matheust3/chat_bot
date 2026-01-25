@@ -10,6 +10,6 @@ USER ubuntu
 # Cria a pasta developer
 WORKDIR /home/developer
 # Instala o node
-RUN wget https://nodejs.org/dist/v20.12.1/node-v20.12.1-linux-x64.tar.xz -O node.tar.xz
+RUN wget https://nodejs.org/dist/v20.19.1/node-v20.19.1-linux-x64.tar.xz -O node.tar.xz
 RUN tar -xf node.tar.xz
-ENV PATH "$PATH:/home/developer/node-v20.12.1-linux-x64/bin"
+ENV PATH "$PATH:/home/developer/node-v20.19.1-linux-x64/bin"

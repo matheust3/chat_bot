@@ -10,6 +10,7 @@ services:
       - BASIC_MODEL=${BASIC_MODEL}
       - PAGARME_API_KEY=${PAGARME_API_KEY}
       - PLAN_ID=${PLAN_ID}
+      - DATABASE_URL=postgresql://chatbot:chatbot@postgres:5432/chatbot?schema=public
     volumes:
       - ${DEV_ROOT_DIR}:/home/developer/chat
     command: bash -c "cd chat && npm i -g npm@10.8.1 && npm install && npm run build && ls -l .. && npm run start"

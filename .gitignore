@@ -5,3 +5,5 @@ dist
 chatbot
 tokens
 database-files
+
+/src/generated/prisma
