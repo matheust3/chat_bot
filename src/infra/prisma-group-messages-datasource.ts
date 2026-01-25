@@ -1,5 +1,5 @@
 import { GroupMessagesDatasource } from '../data/datasources/group-messages-datasource'
-import { SaveGroupMessageData } from '../domain/repositories/group-messages-repository'
+import { GroupMessageSummaryItem, SaveGroupMessageData } from '../domain/repositories/group-messages-repository'
 import { PrismaClient } from '@prisma/client'
 
 export class PrismaGroupMessagesDatasource implements GroupMessagesDatasource {
@@ -32,5 +32,34 @@ export class PrismaGroupMessagesDatasource implements GroupMessagesDatasource {
         fromMe: data.fromMe ?? false
       }
     })
+  }
+
+  async getRecentGroupMessages (groupExternalId: string, limit: number): Promise<GroupMessageSummaryItem[]> {
+    const messages = await this.prisma.groupMessage.findMany({
+      where: {
+        group: {
+          externalId: groupExternalId
+        }
+      },
+      orderBy: {
+        sentAt: 'desc'
+      },
+      take: limit,
+      select: {
+        senderId: true,
+        senderName: true,
+        content: true,
+        sentAt: true,
+        fromMe: true
+      }
+    })
+
+    return messages.map((message) => ({
+      senderId: message.senderId ?? undefined,
+      senderName: message.senderName ?? undefined,
+      content: message.content,
+      sentAt: message.sentAt,
+      fromMe: message.fromMe
+    }))
   }
 }
