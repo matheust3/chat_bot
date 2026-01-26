@@ -31,7 +31,10 @@ export class PrismaGroupMessagesDatasource implements GroupMessagesDatasource {
         sentAt: data.sentAt,
         fromMe: data.fromMe ?? false,
         isAudio: data.isAudio ?? false,
-        originalAudioTranscription: data.originalAudioTranscription
+        originalAudioTranscription: data.originalAudioTranscription,
+        isImage: data.isImage ?? false,
+        isVideo: data.isVideo ?? false,
+        mediaDescription: data.mediaDescription
       }
     })
   }

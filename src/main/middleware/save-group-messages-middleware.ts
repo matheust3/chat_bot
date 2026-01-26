@@ -16,6 +16,9 @@ export default async (message: IMessage, client: IClient, next: () => void): Pro
       let content = ''
       let isAudio = false
       let originalAudioTranscription: string | undefined
+      let isImage = false
+      let isVideo = false
+      let mediaDescription: string | undefined
 
       // Verificar se é mensagem de áudio
       if (message.type === IMessageType.AUDIO) {
@@ -33,6 +36,18 @@ export default async (message: IMessage, client: IClient, next: () => void): Pro
           next()
           return
         }
+      } else if (message.type === IMessageType.IMAGE) {
+        // Para imagens, usar caption se existir ou texto descritivo
+        const captionContent = message.caption?.trim() ?? ''
+        content = captionContent.length > 0 ? captionContent : '[Imagem]'
+        isImage = true
+        mediaDescription = '[Imagem]'
+      } else if (message.type === IMessageType.VIDEO) {
+        // Para vídeos, usar caption se existir ou texto descritivo
+        const captionContent = message.caption?.trim() ?? ''
+        content = captionContent.length > 0 ? captionContent : '[Vídeo]'
+        isVideo = true
+        mediaDescription = '[Vídeo]'
       } else {
         // Para mensagens de texto normais
         const bodyContent = message.body?.trim() ?? ''
@@ -65,7 +80,10 @@ export default async (message: IMessage, client: IClient, next: () => void): Pro
         sentAt: message.sentAt ?? new Date(),
         fromMe: message.fromMe,
         isAudio,
-        originalAudioTranscription
+        originalAudioTranscription,
+        isImage,
+        isVideo,
+        mediaDescription
       })
     }
 
@@ -73,6 +91,9 @@ export default async (message: IMessage, client: IClient, next: () => void): Pro
       let content = ''
       let isAudio = false
       let originalAudioTranscription: string | undefined
+      let isImage = false
+      let isVideo = false
+      let mediaDescription: string | undefined
 
       // Verificar se é mensagem de áudio
       if (message.type === IMessageType.AUDIO) {
@@ -90,6 +111,18 @@ export default async (message: IMessage, client: IClient, next: () => void): Pro
           next()
           return
         }
+      } else if (message.type === IMessageType.IMAGE) {
+        // Para imagens, usar caption se existir ou texto descritivo
+        const captionContent = message.caption?.trim() ?? ''
+        content = captionContent.length > 0 ? captionContent : '[Imagem]'
+        isImage = true
+        mediaDescription = '[Imagem]'
+      } else if (message.type === IMessageType.VIDEO) {
+        // Para vídeos, usar caption se existir ou texto descritivo
+        const captionContent = message.caption?.trim() ?? ''
+        content = captionContent.length > 0 ? captionContent : '[Vídeo]'
+        isVideo = true
+        mediaDescription = '[Vídeo]'
       } else {
         // Para mensagens de texto normais
         const bodyContent = message.body?.trim() ?? ''
@@ -124,7 +157,10 @@ export default async (message: IMessage, client: IClient, next: () => void): Pro
         sentAt: message.sentAt ?? new Date(),
         fromMe: message.fromMe,
         isAudio,
-        originalAudioTranscription
+        originalAudioTranscription,
+        isImage,
+        isVideo,
+        mediaDescription
       })
     }
   } catch (err) {

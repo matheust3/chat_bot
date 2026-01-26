@@ -41,6 +41,9 @@ model GroupMessage {
   fromMe                      Boolean  @default(false)
   isAudio                     Boolean  @default(false)
   originalAudioTranscription  String?
+  isImage                     Boolean  @default(false)
+  isVideo                     Boolean  @default(false)
+  mediaDescription            String?
   createdAt                   DateTime @default(now())
 
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -68,6 +71,9 @@ model DirectMessage {
   fromMe                      Boolean  @default(false)
   isAudio                     Boolean  @default(false)
   originalAudioTranscription  String?
+  isImage                     Boolean  @default(false)
+  isVideo                     Boolean  @default(false)
+  mediaDescription            String?
   createdAt                   DateTime @default(now())
 
   chat DirectChat @relation(fields: [chatId], references: [id], onDelete: Cascade)

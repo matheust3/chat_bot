@@ -9,6 +9,9 @@ export interface SaveDirectMessageData {
   fromMe?: boolean
   isAudio?: boolean
   originalAudioTranscription?: string
+  isImage?: boolean
+  isVideo?: boolean
+  mediaDescription?: string
 }
 
 export interface DirectMessagesRepository {

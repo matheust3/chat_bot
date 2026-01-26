@@ -9,6 +9,9 @@ export interface SaveGroupMessageData {
   fromMe?: boolean
   isAudio?: boolean
   originalAudioTranscription?: string
+  isImage?: boolean
+  isVideo?: boolean
+  mediaDescription?: string
 }
 
 export interface GroupMessageSummaryItem {
