@@ -64,4 +64,45 @@ export class PrismaGroupMessagesDatasource implements GroupMessagesDatasource {
       fromMe: message.fromMe
     }))
   }
+
+  async getMessagesSince (groupExternalId: string, after: Date | null, limit: number): Promise<GroupMessageSummaryItem[]> {
+    const messages = await this.prisma.groupMessage.findMany({
+      where: {
+        group: {
+          externalId: groupExternalId
+        },
+        sentAt: after != null ? { gt: after } : undefined
+      },
+      orderBy: {
+        sentAt: 'asc'
+      },
+      take: limit,
+      select: {
+        senderId: true,
+        senderName: true,
+        content: true,
+        sentAt: true,
+        fromMe: true
+      }
+    })
+
+    return messages.map((message) => ({
+      senderId: message.senderId ?? undefined,
+      senderName: message.senderName ?? undefined,
+      content: message.content,
+      sentAt: message.sentAt,
+      fromMe: message.fromMe
+    }))
+  }
+
+  async countMessagesSince (groupExternalId: string, after: Date | null): Promise<number> {
+    return await this.prisma.groupMessage.count({
+      where: {
+        group: {
+          externalId: groupExternalId
+        },
+        sentAt: after != null ? { gt: after } : undefined
+      }
+    })
+  }
 }

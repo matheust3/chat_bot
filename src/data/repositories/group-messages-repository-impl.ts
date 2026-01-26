@@ -15,4 +15,12 @@ export class GroupMessagesRepositoryImpl implements GroupMessagesRepository {
   async getRecentGroupMessages (groupExternalId: string, limit: number): Promise<GroupMessageSummaryItem[]> {
     return await this.datasource.getRecentGroupMessages(groupExternalId, limit)
   }
+
+  async getMessagesSince (groupExternalId: string, after: Date | null, limit: number): Promise<GroupMessageSummaryItem[]> {
+    return await this.datasource.getMessagesSince(groupExternalId, after, limit)
+  }
+
+  async countMessagesSince (groupExternalId: string, after: Date | null): Promise<number> {
+    return await this.datasource.countMessagesSince(groupExternalId, after)
+  }
 }

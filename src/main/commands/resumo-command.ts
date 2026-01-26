@@ -1,29 +1,10 @@
 import { IClient } from '../protocols/IClient'
 import { IMessage } from '../protocols/IMessage'
 import { GroupMessagesRepositoryInstance } from '../singletons/group-messages-repository-instance'
+import { GroupSummaryCheckpointRepositoryInstance } from '../singletons/group-summary-checkpoint-repository-instance'
 import { GroupSummaryAgent } from '../../data/services/group-summary-agent'
 
-const DEFAULT_LIMIT = 50
-const MAX_LIMIT = 200
-const MIN_LIMIT = 10
-
-const parseLimit = (args?: string[]): number => {
-  if (args == null || args.length === 0) {
-    return DEFAULT_LIMIT
-  }
-
-  for (const arg of args) {
-    const match = arg.match(/\d+/)
-    if (match != null) {
-      const value = parseInt(match[0], 10)
-      if (!Number.isNaN(value)) {
-        return Math.min(MAX_LIMIT, Math.max(MIN_LIMIT, value))
-      }
-    }
-  }
-
-  return DEFAULT_LIMIT
-}
+const CHUNK_LIMIT = 300
 
 export default async (message: IMessage, client: IClient): Promise<void> => {
   if (message.command?.command !== 'resumo') {
@@ -40,11 +21,19 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
     return
   }
 
-  const limit = parseLimit(message.command.args)
-  const messages = await GroupMessagesRepositoryInstance.getRecentGroupMessages(message.groupId, limit)
+  const lastSummarizedAt = await GroupSummaryCheckpointRepositoryInstance.getLastSummarizedAt(message.groupId)
+  const pendingCount: number = await GroupMessagesRepositoryInstance.countMessagesSince(message.groupId, lastSummarizedAt)
+
+  if (pendingCount === 0) {
+    await client.sendText(message.groupId, 'Nenhuma nova mensagem desde o último resumo.', { quotedMsg: message.id })
+    return
+  }
+
+  const chunkSize: number = Math.min(CHUNK_LIMIT, pendingCount)
+  const messages = await GroupMessagesRepositoryInstance.getMessagesSince(message.groupId, lastSummarizedAt, chunkSize)
 
   if (messages.length === 0) {
-    await client.sendText(message.groupId, 'Ainda não tenho mensagens suficientes para resumir.', { quotedMsg: message.id })
+    await client.sendText(message.groupId, 'Não consegui carregar as mensagens para resumir.', { quotedMsg: message.id })
     return
   }
 
@@ -55,5 +44,15 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
   const agent = new GroupSummaryAgent()
   const summary = await agent.summarize(ordered, message.groupName)
 
-  await client.sendText(message.groupId, summary, { quotedMsg: message.id })
+  const lastProcessed = ordered[ordered.length - 1]?.sentAt
+  if (lastProcessed != null) {
+    await GroupSummaryCheckpointRepositoryInstance.setLastSummarizedAt(message.groupId, new Date(lastProcessed))
+  }
+
+  const hasMore = pendingCount > CHUNK_LIMIT
+  const footer = hasMore
+    ? `\n\n⚠️ Resumo parcial: processadas ${chunkSize} de ${pendingCount} novas mensagens. Envie #resumo novamente para continuar.`
+    : `\n\n✅ Resumo completo das ${pendingCount} novas mensagens.`
+
+  await client.sendText(message.groupId, `${summary}${footer}`, { quotedMsg: message.id })
 }
