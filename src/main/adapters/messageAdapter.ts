@@ -78,9 +78,13 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
   }
 
   // Check the message type
-  for (const key in IMessageType) {
-    if (message.type === IMessageType[key]) {
-      messageType = IMessageType[key]
+  if (message.type === 'ptt' || message.type === 'audio') {
+    messageType = IMessageType.AUDIO
+  } else {
+    for (const key in IMessageType) {
+      if (message.type === IMessageType[key]) {
+        messageType = IMessageType[key]
+      }
     }
   }
 

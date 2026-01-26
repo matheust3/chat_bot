@@ -7,6 +7,8 @@ export interface SaveDirectMessageData {
   content: string
   sentAt: Date
   fromMe?: boolean
+  isAudio?: boolean
+  originalAudioTranscription?: string
 }
 
 export interface DirectMessagesRepository {

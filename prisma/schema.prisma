@@ -30,15 +30,17 @@ model Group {
 }
 
 model GroupMessage {
-  id          String   @id @default(cuid())
-  groupId     String
-  externalId  String?
-  senderId    String?
-  senderName  String?
-  content     String
-  sentAt      DateTime
-  fromMe      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id                          String   @id @default(cuid())
+  groupId                     String
+  externalId                  String?
+  senderId                    String?
+  senderName                  String?
+  content                     String
+  sentAt                      DateTime
+  fromMe                      Boolean  @default(false)
+  isAudio                     Boolean  @default(false)
+  originalAudioTranscription  String?
+  createdAt                   DateTime @default(now())
 
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
@@ -55,15 +57,17 @@ model DirectChat {
 }
 
 model DirectMessage {
-  id          String   @id @default(cuid())
-  chatId      String
-  externalId  String?
-  senderId    String?
-  senderName  String?
-  content     String
-  sentAt      DateTime
-  fromMe      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id                          String   @id @default(cuid())
+  chatId                      String
+  externalId                  String?
+  senderId                    String?
+  senderName                  String?
+  content                     String
+  sentAt                      DateTime
+  fromMe                      Boolean  @default(false)
+  isAudio                     Boolean  @default(false)
+  originalAudioTranscription  String?
+  createdAt                   DateTime @default(now())
 
   chat DirectChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
 

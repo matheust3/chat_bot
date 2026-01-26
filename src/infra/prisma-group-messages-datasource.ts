@@ -29,7 +29,9 @@ export class PrismaGroupMessagesDatasource implements GroupMessagesDatasource {
         senderName: data.senderName,
         content: data.content,
         sentAt: data.sentAt,
-        fromMe: data.fromMe ?? false
+        fromMe: data.fromMe ?? false,
+        isAudio: data.isAudio ?? false,
+        originalAudioTranscription: data.originalAudioTranscription
       }
     })
   }

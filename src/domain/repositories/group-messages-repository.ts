@@ -7,6 +7,8 @@ export interface SaveGroupMessageData {
   content: string
   sentAt: Date
   fromMe?: boolean
+  isAudio?: boolean
+  originalAudioTranscription?: string
 }
 
 export interface GroupMessageSummaryItem {
