@@ -1,7 +1,7 @@
 import Head from 'next/head'
-import { useState } from 'react'
+import { useState, ReactElement } from 'react'
 
-export default function Home() {
+export default function Home (): ReactElement {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   return (
@@ -13,11 +13,12 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main style={{ padding: '20px', fontFamily: 'system-ui, sans-serif' }}>
-        {!isLoggedIn ? (
+        {!isLoggedIn
+          ? (
           <div style={{ maxWidth: '400px', margin: '0 auto', marginTop: '100px' }}>
             <h1>Bem-vindo ao SaaS</h1>
             <p>Faça login para acessar suas funcionalidades</p>
-            <button 
+            <button
               onClick={() => setIsLoggedIn(true)}
               style={{
                 padding: '10px 20px',
@@ -32,11 +33,12 @@ export default function Home() {
               Login
             </button>
           </div>
-        ) : (
+            )
+          : (
           <div>
             <h1>Dashboard</h1>
             <p>Bem-vindo ao seu painel de controle SaaS</p>
-            <button 
+            <button
               onClick={() => setIsLoggedIn(false)}
               style={{
                 padding: '10px 20px',
@@ -51,7 +53,7 @@ export default function Home() {
               Logout
             </button>
           </div>
-        )}
+            )}
       </main>
     </>
   )
