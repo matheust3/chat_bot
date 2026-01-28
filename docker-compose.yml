@@ -19,6 +19,26 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  client:
+    container_name: saas_client
+    build:
+      context: .
+      dockerfile: ./client/Dockerfile
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://chatbot:chatbot@postgres:5432/chatbot?schema=public
+      - NEXT_PUBLIC_API_URL=http://api:3000
+    ports:
+      - "3001:3001"
+    volumes:
+      - ${DEV_ROOT_DIR}/client:/app
+    depends_on:
+      - postgres
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   postgres:
     container_name: chat_bot_postgres
     image: postgres:16
