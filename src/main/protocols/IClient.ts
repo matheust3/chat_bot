@@ -34,6 +34,7 @@ export interface IClient {
    */
   getChatName: (chatId: string) => Promise<string | undefined>
   getGroupInviteLink: (chatId: string) => Promise<string>
+  getNumberId: (phone: string) => Promise<string | undefined>
   sendImageAsSticker: (to: string, pathOrBase64: string, type: 'static' | 'animated', op?: { quotedMsg: string }) => Promise<void>
   sendText: (to: string, content: string, op?: { quotedMsg: string }) => Promise<string>
 }

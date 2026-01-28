@@ -35,6 +35,15 @@ export const clientAdapter = (client: Whatsapp): IClient => {
     getGroupInviteLink: async (chatId: string) => {
       return await client.getGroupInviteLink(chatId)
     },
+    getNumberId: async (phone: string) => {
+      const contactId = phone.includes('@') ? phone : `${phone}@c.us`
+      const status = await client.checkNumberStatus(contactId)
+      if (!status.canReceiveMessage) {
+        return undefined
+      }
+      const serialized = (status.id as { _serialized?: string })?._serialized
+      return serialized
+    },
     deleteMessage: async (chatId: string, messageId: string) => {
       await client.deleteMessage(chatId, messageId, false, true)
     },

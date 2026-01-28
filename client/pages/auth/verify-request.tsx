@@ -1,4 +1,5 @@
 import Head from 'next/head'
+import Link from 'next/link'
 import { ReactElement } from 'react'
 
 export default function VerifyRequest (): ReactElement {
@@ -38,7 +39,7 @@ export default function VerifyRequest (): ReactElement {
               </p>
             </div>
           </div>
-          <a
+          <Link
             href="/"
             style={{
               display: 'inline-block',
@@ -50,7 +51,7 @@ export default function VerifyRequest (): ReactElement {
             }}
           >
             ← Voltar para a página inicial
-          </a>
+          </Link>
         </div>
       </main>
     </>

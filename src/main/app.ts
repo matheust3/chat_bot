@@ -8,6 +8,7 @@ import { messageAdapter } from './adapters/messageAdapter'
 import commands from './config/commands'
 import middlewares from './config/middlewares'
 import { clientAdapter } from './adapters/clientAdapter'
+import { createWhatsAppCodeSubscriber } from './helpers/whatsapp-code-subscriber-factory'
 
 interface IOriginQuotedMsg {
   id: {
@@ -43,6 +44,8 @@ create({
     protocolTimeout: 120000
   }
 }).then(async (client) => {
+  const whatsappCodeSubscriber = createWhatsAppCodeSubscriber(clientAdapter(client))
+  whatsappCodeSubscriber.start()
   // Recebe a mensagem e envia a resposta
   client.onAnyMessage((message: Message) => {
     void (async () => {
