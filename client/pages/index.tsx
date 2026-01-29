@@ -1,5 +1,5 @@
 import Head from 'next/head'
-import { ReactElement, useState, FormEvent } from 'react'
+import { ReactElement, useState, FormEvent, useEffect } from 'react'
 import countryCodes from '../data/countryCodes.json'
 import { useSession, signIn, signOut } from 'next-auth/react'
 
@@ -15,6 +15,46 @@ export default function Home (): ReactElement {
   const [whatsAppStep, setWhatsAppStep] = useState<'input' | 'code' | 'verified'>('input')
   const [whatsAppError, setWhatsAppError] = useState('')
   const [whatsAppLoading, setWhatsAppLoading] = useState(false)
+
+  useEffect(() => {
+    if (session?.user?.email == null) {
+      return
+    }
+
+    let cancelled = false
+
+    const loadWhatsAppStatus = async (): Promise<void> => {
+      try {
+        const response = await fetch('/api/whatsapp/status')
+        if (!response.ok) {
+          return
+        }
+        const data = await response.json() as { phone?: string | null }
+        if (!cancelled && data.phone != null && data.phone !== '') {
+          if (data.phone.startsWith('+')) {
+            const match = data.phone.match(/^\+(\d{1,3})(\d+)$/)
+            if (match != null) {
+              setCountryCode(`+${match[1]}`)
+              setPhone(match[2])
+            } else {
+              setPhone(data.phone)
+            }
+          } else {
+            setPhone(data.phone)
+          }
+          setWhatsAppStep('verified')
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+
+    void loadWhatsAppStatus()
+
+    return () => {
+      cancelled = true
+    }
+  }, [session?.user?.email])
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
@@ -423,6 +463,26 @@ export default function Home (): ReactElement {
                 </div>
               )}
             </div>
+            {whatsAppStep === 'verified' && (
+              <div style={{
+                marginTop: '24px',
+                padding: '20px',
+                backgroundColor: '#f1f5f9',
+                borderRadius: '10px',
+                border: '1px solid #e2e8f0',
+                maxWidth: '480px'
+              }}>
+                <h3 style={{ marginTop: 0 }}>Resumo do vínculo</h3>
+                <div style={{ display: 'grid', gap: '10px', fontSize: '14px', color: '#334155' }}>
+                  <div>
+                    <strong>Email:</strong> {session.user?.email ?? 'Não informado'}
+                  </div>
+                  <div>
+                    <strong>WhatsApp:</strong> {countryCode}{phone}
+                  </div>
+                </div>
+              </div>
+            )}
             <button
               onClick={() => { void signOut() }}
               style={{

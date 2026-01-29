@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
 import { verifyWhatsAppCode } from '../../../lib/whatsappVerification'
+import { PrismaClientInstance } from '../../../lib/prisma'
 
 interface ResponseBody {
   verified?: boolean
@@ -49,6 +50,25 @@ export default async function handler (req: NextApiRequest, res: NextApiResponse
     res.status(400).json({ error: 'Código inválido ou expirado.' })
     return
   }
+
+  await PrismaClientInstance.user.updateMany({
+    where: {
+      whatsappNumber: normalizedPhone,
+      email: { not: normalizedEmail }
+    },
+    data: {
+      whatsappNumber: null,
+      whatsappVerifiedAt: null
+    }
+  })
+
+  await PrismaClientInstance.user.update({
+    where: { email: normalizedEmail },
+    data: {
+      whatsappNumber: normalizedPhone,
+      whatsappVerifiedAt: new Date()
+    }
+  })
 
   res.status(200).json({ verified: true })
 }
