@@ -15,6 +15,8 @@ export default function Home (): ReactElement {
   const [whatsAppStep, setWhatsAppStep] = useState<'input' | 'code' | 'verified'>('input')
   const [whatsAppError, setWhatsAppError] = useState('')
   const [whatsAppLoading, setWhatsAppLoading] = useState(false)
+  const [unlinkLoading, setUnlinkLoading] = useState(false)
+  const [showUnlinkModal, setShowUnlinkModal] = useState(false)
 
   useEffect(() => {
     if (session?.user?.email == null) {
@@ -55,6 +57,24 @@ export default function Home (): ReactElement {
       cancelled = true
     }
   }, [session?.user?.email])
+
+  const handleUnlinkWhatsApp = async (): Promise<void> => {
+    setUnlinkLoading(true)
+    try {
+      const response = await fetch('/api/whatsapp/unlink', {
+        method: 'POST'
+      })
+      if (response.ok) {
+        setWhatsAppStep('input')
+        setWhatsAppCode('')
+        setWhatsAppError('')
+        setPhone('')
+        setShowUnlinkModal(false)
+      }
+    } finally {
+      setUnlinkLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
@@ -298,54 +318,179 @@ export default function Home (): ReactElement {
               <p style={{ color: '#64748b', marginBottom: '20px' }}>
                 Você está autenticado no seu painel de controle SaaS.
               </p>
-            <div style={{
-              marginTop: '30px',
-              padding: '20px',
-              backgroundColor: '#f8fafc',
-              borderRadius: '8px',
-              border: '1px solid #e2e8f0',
-              maxWidth: '480px'
-            }}>
-              <h3 style={{ marginTop: 0 }}>Vincular WhatsApp</h3>
-              <p style={{ fontSize: '14px', color: '#475569' }}>
-                Informe seu número do WhatsApp para receber um código de confirmação.
-              </p>
-
-              {whatsAppStep === 'input' && (
-                <form onSubmit={(e) => { void handleRequestWhatsAppCode(e) }}>
-                  <div style={{ marginBottom: '12px' }}>
-                    <label htmlFor="whatsapp" style={{ display: 'block', marginBottom: '5px' }}>
-                      Número do WhatsApp
-                    </label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <select
-                        id="whatsapp-country"
-                        value={countryCode}
-                        onChange={(e) => setCountryCode(e.target.value)}
+            {whatsAppStep === 'verified'
+              ? (
+              <>
+                <div style={{
+                  marginTop: '30px',
+                  padding: '20px',
+                  backgroundColor: '#f8fafc',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                  maxWidth: '480px'
+                }}>
+                  <h3 style={{ marginTop: 0 }}>Vínculo WhatsApp</h3>
+                  <p style={{ fontSize: '14px', color: '#475569' }}>
+                    Seu número já está vinculado.
+                  </p>
+                  <div style={{ display: 'grid', gap: '10px', fontSize: '14px', color: '#334155' }}>
+                    <div>
+                      <strong>Email:</strong> {session.user?.email ?? 'Não informado'}
+                    </div>
+                    <div>
+                      <strong>WhatsApp:</strong> {countryCode}{phone}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setShowUnlinkModal(true) }}
+                    disabled={unlinkLoading}
+                    style={{
+                      marginTop: '16px',
+                      width: '100%',
+                      padding: '10px 20px',
+                      backgroundColor: unlinkLoading ? '#e2e8f0' : '#ef4444',
+                      color: unlinkLoading ? '#64748b' : 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: unlinkLoading ? 'not-allowed' : 'pointer',
+                      fontSize: '14px'
+                    }}
+                  >
+                    Desvincular
+                  </button>
+                </div>
+                <div style={{
+                  marginTop: '24px',
+                  padding: '20px',
+                  backgroundColor: '#f1f5f9',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
+                  maxWidth: '480px'
+                }}>
+                  <h3 style={{ marginTop: 0 }}>Grupos vinculados ao bot</h3>
+                  <p style={{ fontSize: '14px', color: '#64748b' }}>
+                    Em breve listaremos aqui os grupos que você participa.
+                  </p>
+                  <div style={{ display: 'grid', gap: '10px' }}>
+                    {['Grupo de Vendas', 'Time Produto', 'Atendimento VIP'].map((group) => (
+                      <div
+                        key={group}
                         style={{
-                          width: '140px',
-                          padding: '10px',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '5px',
-                          fontSize: '14px',
-                          backgroundColor: 'white'
+                          padding: '12px 14px',
+                          borderRadius: '8px',
+                          border: '1px dashed #cbd5e1',
+                          backgroundColor: 'white',
+                          color: '#94a3b8',
+                          fontSize: '14px'
                         }}
                       >
-                        {countryCodes.map((country) => (
-                          <option key={`${country.code}-${country.name}`} value={country.code}>
-                            {country.code} ({country.name})
-                          </option>
-                        ))}
-                      </select>
+                        {group}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+                )
+              : (
+              <div style={{
+                marginTop: '30px',
+                padding: '20px',
+                backgroundColor: '#f8fafc',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                maxWidth: '480px'
+              }}>
+                <h3 style={{ marginTop: 0 }}>Vincular WhatsApp</h3>
+                <p style={{ fontSize: '14px', color: '#475569' }}>
+                  Informe seu número do WhatsApp para receber um código de confirmação.
+                </p>
+
+                {whatsAppStep === 'input' && (
+                  <form onSubmit={(e) => { void handleRequestWhatsAppCode(e) }}>
+                    <div style={{ marginBottom: '12px' }}>
+                      <label htmlFor="whatsapp" style={{ display: 'block', marginBottom: '5px' }}>
+                        Número do WhatsApp
+                      </label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <select
+                          id="whatsapp-country"
+                          value={countryCode}
+                          onChange={(e) => setCountryCode(e.target.value)}
+                          style={{
+                            width: '140px',
+                            padding: '10px',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '5px',
+                            fontSize: '14px',
+                            backgroundColor: 'white'
+                          }}
+                        >
+                          {countryCodes.map((country) => (
+                            <option key={`${country.code}-${country.name}`} value={country.code}>
+                              {country.code} ({country.name})
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          id="whatsapp"
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          required
+                          placeholder="11 99999-9999"
+                          style={{
+                            flex: 1,
+                            padding: '10px',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '5px',
+                            fontSize: '14px'
+                          }}
+                        />
+                      </div>
+                      <p style={{ marginTop: '6px', marginBottom: 0, fontSize: '12px', color: '#64748b' }}>
+                        Selecione o país e digite o número sem o código.
+                      </p>
+                    </div>
+                    {whatsAppError !== '' && (
+                      <div style={{ color: '#f3004d', marginBottom: '12px', fontSize: '14px' }}>
+                        {whatsAppError}
+                      </div>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={whatsAppLoading}
+                      style={{
+                        width: '100%',
+                        padding: '10px 20px',
+                        backgroundColor: whatsAppLoading ? '#cbd5e1' : '#16a34a',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: whatsAppLoading ? 'not-allowed' : 'pointer',
+                        fontSize: '15px'
+                      }}
+                    >
+                      {whatsAppLoading ? 'Enviando...' : 'Enviar código'}
+                    </button>
+                  </form>
+                )}
+
+                {whatsAppStep === 'code' && (
+                  <form onSubmit={(e) => { void handleVerifyWhatsAppCode(e) }}>
+                    <div style={{ marginBottom: '12px' }}>
+                      <label htmlFor="whatsapp-code" style={{ display: 'block', marginBottom: '5px' }}>
+                        Código recebido:
+                      </label>
                       <input
-                        id="whatsapp"
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        id="whatsapp-code"
+                        type="text"
+                        value={whatsAppCode}
+                        onChange={(e) => setWhatsAppCode(e.target.value)}
                         required
-                        placeholder="11 99999-9999"
+                        placeholder="000000"
                         style={{
-                          flex: 1,
+                          width: '100%',
                           padding: '10px',
                           border: '1px solid #cbd5e1',
                           borderRadius: '5px',
@@ -353,136 +498,52 @@ export default function Home (): ReactElement {
                         }}
                       />
                     </div>
-                    <p style={{ marginTop: '6px', marginBottom: 0, fontSize: '12px', color: '#64748b' }}>
-                      Selecione o país e digite o número sem o código.
-                    </p>
-                  </div>
-                  {whatsAppError !== '' && (
-                    <div style={{ color: '#f3004d', marginBottom: '12px', fontSize: '14px' }}>
-                      {whatsAppError}
-                    </div>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={whatsAppLoading}
-                    style={{
-                      width: '100%',
-                      padding: '10px 20px',
-                      backgroundColor: whatsAppLoading ? '#cbd5e1' : '#16a34a',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '5px',
-                      cursor: whatsAppLoading ? 'not-allowed' : 'pointer',
-                      fontSize: '15px'
-                    }}
-                  >
-                    {whatsAppLoading ? 'Enviando...' : 'Enviar código'}
-                  </button>
-                </form>
-              )}
-
-              {whatsAppStep === 'code' && (
-                <form onSubmit={(e) => { void handleVerifyWhatsAppCode(e) }}>
-                  <div style={{ marginBottom: '12px' }}>
-                    <label htmlFor="whatsapp-code" style={{ display: 'block', marginBottom: '5px' }}>
-                      Código recebido:
-                    </label>
-                    <input
-                      id="whatsapp-code"
-                      type="text"
-                      value={whatsAppCode}
-                      onChange={(e) => setWhatsAppCode(e.target.value)}
-                      required
-                      placeholder="000000"
+                    {whatsAppError !== '' && (
+                      <div style={{ color: '#f3004d', marginBottom: '12px', fontSize: '14px' }}>
+                        {whatsAppError}
+                      </div>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={whatsAppLoading}
                       style={{
                         width: '100%',
-                        padding: '10px',
-                        border: '1px solid #cbd5e1',
+                        padding: '10px 20px',
+                        backgroundColor: whatsAppLoading ? '#cbd5e1' : '#0ea5e9',
+                        color: 'white',
+                        border: 'none',
                         borderRadius: '5px',
+                        cursor: whatsAppLoading ? 'not-allowed' : 'pointer',
+                        fontSize: '15px'
+                      }}
+                    >
+                      {whatsAppLoading ? 'Validando...' : 'Confirmar código'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWhatsAppStep('input')
+                        setWhatsAppCode('')
+                        setPhone('')
+                      }}
+                      style={{
+                        marginTop: '10px',
+                        width: '100%',
+                        padding: '8px 16px',
+                        backgroundColor: 'white',
+                        color: '#0ea5e9',
+                        border: '1px solid #0ea5e9',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
                         fontSize: '14px'
                       }}
-                    />
-                  </div>
-                  {whatsAppError !== '' && (
-                    <div style={{ color: '#f3004d', marginBottom: '12px', fontSize: '14px' }}>
-                      {whatsAppError}
-                    </div>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={whatsAppLoading}
-                    style={{
-                      width: '100%',
-                      padding: '10px 20px',
-                      backgroundColor: whatsAppLoading ? '#cbd5e1' : '#0ea5e9',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '5px',
-                      cursor: whatsAppLoading ? 'not-allowed' : 'pointer',
-                      fontSize: '15px'
-                    }}
-                  >
-                    {whatsAppLoading ? 'Validando...' : 'Confirmar código'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setWhatsAppStep('input')
-                      setWhatsAppCode('')
-                      setPhone('')
-                    }}
-                    style={{
-                      marginTop: '10px',
-                      width: '100%',
-                      padding: '8px 16px',
-                      backgroundColor: 'white',
-                      color: '#0ea5e9',
-                      border: '1px solid #0ea5e9',
-                      borderRadius: '5px',
-                      cursor: 'pointer',
-                      fontSize: '14px'
-                    }}
-                  >
-                    Usar outro número
-                  </button>
-                </form>
-              )}
-
-              {whatsAppStep === 'verified' && (
-                <div style={{
-                  marginTop: '10px',
-                  padding: '16px',
-                  backgroundColor: '#ecfdf5',
-                  borderRadius: '6px',
-                  border: '1px solid #34d399'
-                }}>
-                  <strong style={{ color: '#047857' }}>✅ WhatsApp vinculado!</strong>
-                  <p style={{ marginTop: '6px', marginBottom: 0, color: '#065f46', fontSize: '14px' }}>
-                    Número confirmado: {countryCode}{phone}
-                  </p>
-                </div>
-              )}
-            </div>
-            {whatsAppStep === 'verified' && (
-              <div style={{
-                marginTop: '24px',
-                padding: '20px',
-                backgroundColor: '#f1f5f9',
-                borderRadius: '10px',
-                border: '1px solid #e2e8f0',
-                maxWidth: '480px'
-              }}>
-                <h3 style={{ marginTop: 0 }}>Resumo do vínculo</h3>
-                <div style={{ display: 'grid', gap: '10px', fontSize: '14px', color: '#334155' }}>
-                  <div>
-                    <strong>Email:</strong> {session.user?.email ?? 'Não informado'}
-                  </div>
-                  <div>
-                    <strong>WhatsApp:</strong> {countryCode}{phone}
-                  </div>
-                </div>
+                    >
+                      Usar outro número
+                    </button>
+                  </form>
+                )}
               </div>
-            )}
+                )}
             <button
               onClick={() => { void signOut() }}
               style={{
@@ -498,6 +559,65 @@ export default function Home (): ReactElement {
             >
               Logout
             </button>
+            {showUnlinkModal && (
+              <div style={{
+                position: 'fixed',
+                inset: 0,
+                backgroundColor: 'rgba(15, 23, 42, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 50
+              }}>
+                <div style={{
+                  width: '100%',
+                  maxWidth: '420px',
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  padding: '24px',
+                  boxShadow: '0 20px 40px rgba(15, 23, 42, 0.2)'
+                }}>
+                  <h3 style={{ marginTop: 0 }}>Desvincular WhatsApp</h3>
+                  <p style={{ color: '#475569', fontSize: '14px' }}>
+                    Tem certeza que deseja desvincular o número <strong>{countryCode}{phone}</strong>?
+                  </p>
+                  <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                    <button
+                      type="button"
+                      onClick={() => { setShowUnlinkModal(false) }}
+                      disabled={unlinkLoading}
+                      style={{
+                        flex: 1,
+                        padding: '10px 16px',
+                        backgroundColor: 'white',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        color: '#334155',
+                        cursor: unlinkLoading ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { void handleUnlinkWhatsApp() }}
+                      disabled={unlinkLoading}
+                      style={{
+                        flex: 1,
+                        padding: '10px 16px',
+                        backgroundColor: unlinkLoading ? '#e2e8f0' : '#ef4444',
+                        border: 'none',
+                        borderRadius: '8px',
+                        color: unlinkLoading ? '#64748b' : 'white',
+                        cursor: unlinkLoading ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {unlinkLoading ? 'Desvinculando...' : 'Confirmar'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             </div>
           </div>
             )}
