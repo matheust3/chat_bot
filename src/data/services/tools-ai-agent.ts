@@ -235,6 +235,7 @@ export class ToolsAiAgent implements IAAgent {
       'Você classifica se a mensagem contém informação útil e duradoura para lembrar.',
       'Considere como importante: preferências, objetivos, dados pessoais, rotina, contexto recorrente.',
       'Considere como NÃO importante: pedidos pontuais, listas temporárias, respostas efêmeras.',
+      'Se for importante, gere um resumo curto e explícito em português, começando com "O usuário..." ou "O nome do usuário...".',
       'Responda SOMENTE com JSON no formato:',
       '{"important":true|false,"summary":"resumo curto"}',
       'Se não for importante, use "summary" vazio.'
@@ -407,7 +408,29 @@ export class ToolsAiAgent implements IAAgent {
   }
 
   private normalizeImportantSummary (summary: string): string {
-    return summary.replace(/\s+/g, ' ').trim()
+    const cleaned = summary
+      .replace(/^\s*importante\s*:\s*/i, '')
+      .replace(/^\s*mportante\s*:\s*/i, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+    if (cleaned === '') return ''
+
+    const nameMatch = cleaned.match(/^nome\s*:\s*(.+)$/i)
+    if (nameMatch?.[1] != null) {
+      return `O nome do usuário é ${nameMatch[1].trim()}`
+    }
+
+    const userMatch = cleaned.match(/^(?:eu\s+sou|sou|usu[aá]rio\s+é|usuario\s+é)\s+(.+)$/i)
+    if (userMatch?.[1] != null) {
+      return `O usuário é ${userMatch[1].trim()}`
+    }
+
+    if (!/^O\s+/i.test(cleaned)) {
+      return `O usuário ${cleaned}`
+    }
+
+    return cleaned
   }
 
   private async countImportantMemories (userId: string): Promise<number> {
