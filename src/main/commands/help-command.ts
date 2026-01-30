@@ -11,8 +11,7 @@ export default async (message: IMessage, client: IClient): Promise<void> => {
 *#️⃣sticker [argumentos] ->* Faz figurinhas
        *Argumentos:*
        \`-o\` *->* Não recorta a figurinha
-*#️⃣link ->* Retorna o link do grupo
-*#️⃣resumo [-N] ->* Resume as últimas mensagens do grupo`
+*#️⃣link ->* Retorna o link do grupo`
 
     if (message.fromAdmin) {
       text += `\n\n🎩*Comandos de root*🎩\n 
