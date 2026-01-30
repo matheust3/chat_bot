@@ -72,6 +72,27 @@ export class VectorMemoryStore {
     )
   }
 
+  async pruneByMaxPerUser (kind: MemoryKind, maxPerUser: number): Promise<void> {
+    await this.initialized
+    if (!Number.isFinite(maxPerUser) || maxPerUser <= 0) return
+
+    await this.pool.query(
+      `
+        DELETE FROM ai_memory
+        WHERE id IN (
+          SELECT id FROM (
+            SELECT id,
+              ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC) AS rn
+            FROM ai_memory
+            WHERE kind = $1
+          ) ranked
+          WHERE ranked.rn > $2
+        );
+      `,
+      [kind, maxPerUser]
+    )
+  }
+
   async listRecent (userId: string, limit: number = this.maxRecent, kinds?: MemoryKind | MemoryKind[]): Promise<MemoryRecord[]> {
     await this.initialized
     const normalizedKinds = kinds == null
