@@ -1,4 +1,5 @@
 import Head from 'next/head'
+import Link from 'next/link'
 import { ReactElement, useState, FormEvent, useEffect } from 'react'
 import countryCodes from '../data/countryCodes.json'
 import { useSession, signIn, signOut } from 'next-auth/react'
@@ -324,6 +325,39 @@ export default function Home (): ReactElement {
             {whatsAppStep === 'verified'
               ? (
               <>
+                <div style={{
+                  marginTop: '24px',
+                  padding: '16px',
+                  backgroundColor: '#eef2ff',
+                  borderRadius: '10px',
+                  border: '1px solid #c7d2fe',
+                  maxWidth: '480px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px'
+                }}>
+                  <div>
+                    <h3 style={{ marginTop: 0, marginBottom: '6px' }}>Memórias importantes</h3>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#475569' }}>
+                      Gerencie o que o assistente deve lembrar.
+                    </p>
+                  </div>
+                  <Link
+                    href="/memories"
+                    style={{
+                      padding: '8px 14px',
+                      backgroundColor: '#4f46e5',
+                      color: 'white',
+                      borderRadius: '8px',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 600
+                    }}
+                  >
+                    Abrir
+                  </Link>
+                </div>
                 <div style={{
                   marginTop: '30px',
                   padding: '20px',
