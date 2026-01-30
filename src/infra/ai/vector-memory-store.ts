@@ -1,11 +1,14 @@
 import { Pool } from 'pg'
 import { randomUUID } from 'node:crypto'
 
+export type MemoryKind = 'conversation' | 'important'
+
 export interface MemoryRecord {
   id: string
   content: string
   createdAt: Date
   embedding: number[]
+  kind: MemoryKind
 }
 
 export class VectorMemoryStore {
@@ -31,37 +34,66 @@ export class VectorMemoryStore {
         user_id TEXT NOT NULL,
         content TEXT NOT NULL,
         embedding JSONB NOT NULL,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        kind TEXT NOT NULL DEFAULT 'conversation'
       );
+    `)
+
+    await this.pool.query(`
+      ALTER TABLE ai_memory
+      ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'conversation';
     `)
 
     await this.pool.query(`
       CREATE INDEX IF NOT EXISTS ai_memory_user_created_idx
       ON ai_memory (user_id, created_at DESC);
     `)
+
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS ai_memory_user_kind_created_idx
+      ON ai_memory (user_id, kind, created_at DESC);
+    `)
   }
 
-  async addMemory (userId: string, content: string, embedding: number[]): Promise<void> {
+  async addMemory (userId: string, content: string, embedding: number[], kind: MemoryKind = 'conversation'): Promise<void> {
     await this.initialized
     const id = randomUUID()
     await this.pool.query(
-      'INSERT INTO ai_memory (id, user_id, content, embedding) VALUES ($1, $2, $3, $4)',
-      [id, userId, content, JSON.stringify(embedding)]
+      'INSERT INTO ai_memory (id, user_id, content, embedding, kind) VALUES ($1, $2, $3, $4, $5)',
+      [id, userId, content, JSON.stringify(embedding), kind]
     )
   }
 
-  async listRecent (userId: string, limit: number = this.maxRecent): Promise<MemoryRecord[]> {
+  async updateMemory (id: string, content: string, embedding: number[]): Promise<void> {
     await this.initialized
-    const result = await this.pool.query(
-      'SELECT id, content, embedding, created_at FROM ai_memory WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2',
-      [userId, limit]
+    await this.pool.query(
+      'UPDATE ai_memory SET content = $1, embedding = $2, created_at = NOW() WHERE id = $3',
+      [content, JSON.stringify(embedding), id]
     )
+  }
+
+  async listRecent (userId: string, limit: number = this.maxRecent, kinds?: MemoryKind | MemoryKind[]): Promise<MemoryRecord[]> {
+    await this.initialized
+    const normalizedKinds = kinds == null
+      ? null
+      : (Array.isArray(kinds) ? kinds : [kinds])
+
+    const result = normalizedKinds == null
+      ? await this.pool.query(
+        'SELECT id, content, embedding, created_at, kind FROM ai_memory WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2',
+        [userId, limit]
+      )
+      : await this.pool.query(
+        'SELECT id, content, embedding, created_at, kind FROM ai_memory WHERE user_id = $1 AND kind = ANY($2) ORDER BY created_at DESC LIMIT $3',
+        [userId, normalizedKinds, limit]
+      )
 
     return result.rows.map((row) => ({
       id: String(row.id),
       content: String(row.content),
       createdAt: new Date(row.created_at),
-      embedding: Array.isArray(row.embedding) ? row.embedding : (row.embedding ?? [])
+      embedding: Array.isArray(row.embedding) ? row.embedding : (row.embedding ?? []),
+      kind: (row.kind as MemoryKind) ?? 'conversation'
     }))
   }
 }

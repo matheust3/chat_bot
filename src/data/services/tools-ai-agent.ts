@@ -1,6 +1,6 @@
 import Groq from 'groq-sdk'
 import { IAAgent } from '../../domain/services/ai-agent'
-import { VectorMemoryStore, createHashEmbedding, cosineSimilarity } from '../../infra/ai/vector-memory-store'
+import { VectorMemoryStore, createHashEmbedding, cosineSimilarity, MemoryKind } from '../../infra/ai/vector-memory-store'
 import toolsLoader from '../../main/config/tools'
 import { IToolDefinition, IToolContext } from '../../domain/services/ai-tool'
 
@@ -14,6 +14,23 @@ interface ToolingAnswer {
   tool?: string
   args?: Record<string, unknown>
   assistant?: string
+}
+
+interface ImportanceDecision {
+  important: boolean
+  summary?: string
+}
+
+interface MemoryMatch {
+  id: string
+  content: string
+  score: number
+}
+
+interface MemoryActionDecision {
+  action: 'add' | 'update' | 'ignore'
+  summary?: string
+  targetId?: string
 }
 
 export class ToolsAiAgent implements IAAgent {
@@ -42,9 +59,10 @@ export class ToolsAiAgent implements IAAgent {
   async handleMessage (message: string, userId: string): Promise<string> {
     await this.ensureToolsLoaded()
     const scopedUserId = `${this.integrationId}:${userId}`
-    const memories = await this.searchMemories(scopedUserId, message)
+    const importantMemories = await this.listImportantMemories(scopedUserId)
+    const memories = await this.searchMemories(scopedUserId, message, 6, ['conversation'])
 
-    const systemPrompt = this.buildSystemPrompt(memories)
+    const systemPrompt = this.buildSystemPrompt(importantMemories, memories)
     const first = await this.askModel(systemPrompt, message)
     const toolCall = this.parseToolCall(first)
 
@@ -65,6 +83,35 @@ export class ToolsAiAgent implements IAAgent {
 
     if (finalAnswer.trim() === '') {
       finalAnswer = 'Não consegui responder agora. Tente novamente.'
+    }
+
+    const importance = await this.classifyImportance(message, finalAnswer)
+    if (importance?.important === true) {
+      const summary = this.normalizeImportantSummary(importance.summary ?? '')
+      if (summary !== '') {
+        const matches = await this.findSimilarImportantMemories(scopedUserId, summary)
+        const decision = await this.decideMemoryAction(summary, matches)
+        if (decision.action === 'update' && decision.targetId != null) {
+          const updated = (decision.summary ?? summary).trim()
+          if (updated !== '') {
+            await this.memoryStore.updateMemory(
+              decision.targetId,
+              `Importante: ${updated}`,
+              createHashEmbedding(updated)
+            )
+          }
+        } else if (decision.action === 'add') {
+          const updated = (decision.summary ?? summary).trim()
+          if (updated !== '') {
+            await this.memoryStore.addMemory(
+              scopedUserId,
+              `Importante: ${updated}`,
+              createHashEmbedding(updated),
+              'important'
+            )
+          }
+        }
+      }
     }
 
     await this.storeConversation(scopedUserId, message, finalAnswer)
@@ -89,21 +136,25 @@ export class ToolsAiAgent implements IAAgent {
       integrationId: this.integrationId,
       remember: async (note) => {
         const embedding = createHashEmbedding(note)
-        await this.memoryStore.addMemory(userId, `Nota: ${note}`, embedding)
-        return 'Nota salva.'
+        await this.memoryStore.addMemory(userId, `Importante: ${note}`, embedding, 'important')
+        return 'Nota importante salva.'
       },
       search: async (query, limit = 5) => {
-        return await this.searchMemories(userId, query, limit)
+        return await this.searchMemories(userId, query, limit, ['conversation', 'important'])
       }
     }
 
     return await tool.run(call.args ?? {}, ctx)
   }
 
-  private buildSystemPrompt (memories: string[]): string {
+  private buildSystemPrompt (importantMemories: string[], memories: string[]): string {
     const toolsDescription = this.tools
       .map((tool) => `- ${tool.name}: ${tool.description} | args: ${tool.input}`)
       .join('\n')
+
+    const importantBlock = importantMemories.length > 0
+      ? `Memórias importantes:\n${importantMemories.map((m) => `- ${m}`).join('\n')}`
+      : 'Sem memórias importantes.'
 
     const memoryBlock = memories.length > 0
       ? `Memórias relevantes:\n${memories.map((m) => `- ${m}`).join('\n')}`
@@ -117,6 +168,7 @@ export class ToolsAiAgent implements IAAgent {
       '{"answer":"texto da resposta"}',
       'Ferramentas disponíveis:',
       toolsDescription,
+      importantBlock,
       memoryBlock
     ].join('\n')
   }
@@ -164,6 +216,93 @@ export class ToolsAiAgent implements IAAgent {
     }
   }
 
+  private async classifyImportance (message: string, answer: string): Promise<ImportanceDecision | null> {
+    const prompt = [
+      'Você classifica se a mensagem contém informação útil e duradoura para lembrar.',
+      'Considere como importante: preferências, objetivos, dados pessoais, rotina, contexto recorrente.',
+      'Considere como NÃO importante: pedidos pontuais, listas temporárias, respostas efêmeras.',
+      'Responda SOMENTE com JSON no formato:',
+      '{"important":true|false,"summary":"resumo curto"}',
+      'Se não for importante, use "summary" vazio.'
+    ].join('\n')
+
+    try {
+      const completion = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [
+          { role: 'system', content: prompt },
+          { role: 'user', content: `Usuário: ${message}\nResposta: ${answer}` }
+        ],
+        temperature: 0.1,
+        response_format: { type: 'json_object' }
+      })
+
+      const content = completion.choices[0]?.message?.content?.trim() ?? ''
+      if (content === '') return null
+      const parsed = JSON.parse(content) as ImportanceDecision
+      if (typeof parsed.important !== 'boolean') return null
+      return parsed
+    } catch {
+      return null
+    }
+  }
+
+  private async decideMemoryAction (summary: string, matches: MemoryMatch[]): Promise<MemoryActionDecision> {
+    if (matches.length === 0) {
+      return { action: 'add', summary }
+    }
+
+    const prompt = [
+      'Você decide o que fazer com uma memória importante nova.',
+      'Se já existir uma memória equivalente, escolha "update" com o id alvo e um resumo atualizado.',
+      'Se for nova, escolha "add" com o resumo.',
+      'Se for duplicada sem mudança, escolha "ignore".',
+      'Responda SOMENTE com JSON: {"action":"add|update|ignore","summary":"...","targetId":"..."}'
+    ].join('\n')
+
+    try {
+      const completion = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [
+          { role: 'system', content: prompt },
+          {
+            role: 'user',
+            content: JSON.stringify({
+              summary,
+              matches: matches.map((m) => ({ id: m.id, content: m.content, score: Number(m.score.toFixed(3)) }))
+            })
+          }
+        ],
+        temperature: 0.1,
+        response_format: { type: 'json_object' }
+      })
+
+      const content = completion.choices[0]?.message?.content?.trim() ?? ''
+      if (content === '') return { action: 'add', summary }
+      const parsed = JSON.parse(content) as MemoryActionDecision
+      if (parsed.action !== 'add' && parsed.action !== 'update' && parsed.action !== 'ignore') {
+        return { action: 'add', summary }
+      }
+      return parsed
+    } catch {
+      return { action: 'add', summary }
+    }
+  }
+
+  private async findSimilarImportantMemories (userId: string, summary: string, limit = 5): Promise<MemoryMatch[]> {
+    const embedding = createHashEmbedding(summary)
+    const memories = await this.memoryStore.listRecent(userId, undefined, 'important')
+    return memories
+      .map((memory) => ({
+        id: memory.id,
+        content: memory.content,
+        score: cosineSimilarity(embedding, memory.embedding)
+      }))
+      .filter((item) => item.score >= 0.2)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+  }
+
   private parseToolCall (content: string): ToolCall | null {
     const parsed = this.safeParse(content)
     if (parsed?.tool != null && typeof parsed.tool === 'string') {
@@ -193,9 +332,9 @@ export class ToolsAiAgent implements IAAgent {
     }
   }
 
-  private async searchMemories (userId: string, query: string, limit = 6): Promise<string[]> {
+  private async searchMemories (userId: string, query: string, limit = 6, kinds?: MemoryKind[]): Promise<string[]> {
     const embedding = createHashEmbedding(query)
-    const memories = await this.memoryStore.listRecent(userId)
+    const memories = await this.memoryStore.listRecent(userId, undefined, kinds)
     const scored = memories
       .map((memory) => ({
         content: memory.content,
@@ -214,6 +353,22 @@ export class ToolsAiAgent implements IAAgent {
       .map((item) => item.content)
   }
 
+  private async listImportantMemories (userId: string, limit = 12): Promise<string[]> {
+    const memories = await this.memoryStore.listRecent(userId, limit, 'important')
+    const deduped: string[] = []
+    const usedEmbeddings: number[][] = []
+
+    for (const memory of memories) {
+      const embedding = memory.embedding
+      const isDuplicate = usedEmbeddings.some((existing) => cosineSimilarity(existing, embedding) >= 0.85)
+      if (isDuplicate) continue
+      deduped.push(memory.content)
+      usedEmbeddings.push(embedding)
+    }
+
+    return deduped
+  }
+
   private async storeConversation (userId: string, message: string, answer: string): Promise<void> {
     const trimmedMessage = message.trim()
     const trimmedAnswer = answer.trim()
@@ -222,7 +377,8 @@ export class ToolsAiAgent implements IAAgent {
       await this.memoryStore.addMemory(
         userId,
         `Usuário: ${trimmedMessage}`,
-        createHashEmbedding(trimmedMessage)
+        createHashEmbedding(trimmedMessage),
+        'conversation'
       )
     }
 
@@ -230,8 +386,13 @@ export class ToolsAiAgent implements IAAgent {
       await this.memoryStore.addMemory(
         userId,
         `Assistente: ${trimmedAnswer}`,
-        createHashEmbedding(trimmedAnswer)
+        createHashEmbedding(trimmedAnswer),
+        'conversation'
       )
     }
+  }
+
+  private normalizeImportantSummary (summary: string): string {
+    return summary.replace(/\s+/g, ' ').trim()
   }
 }
