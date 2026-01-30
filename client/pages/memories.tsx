@@ -1,6 +1,7 @@
 import Head from 'next/head'
 import { ReactElement, useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/router'
 
 interface MemoryItem {
   id: string
@@ -10,6 +11,7 @@ interface MemoryItem {
 
 export default function Memories (): ReactElement {
   const { data: session, status } = useSession()
+  const router = useRouter()
   const [items, setItems] = useState<MemoryItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -38,6 +40,12 @@ export default function Memories (): ReactElement {
     void loadMemories()
   }, [status])
 
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      void router.replace('/')
+    }
+  }, [status, router])
+
   const handleDelete = async (id: string): Promise<void> => {
     setDeletingId(id)
     try {
@@ -63,7 +71,7 @@ export default function Memories (): ReactElement {
   if (status === 'unauthenticated') {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <p>Faça login para acessar as memórias.</p>
+        <p>Redirecionando...</p>
       </div>
     )
   }

@@ -38,6 +38,8 @@ export class ToolsAiAgent implements IAAgent {
   private readonly memoryStore: VectorMemoryStore
   private readonly model: string
   private readonly integrationId: string
+  private readonly maxImportantMemories: number
+  private readonly memoriesHost: string
   private tools: IToolDefinition[]
   private toolsLoaded: boolean
 
@@ -52,6 +54,10 @@ export class ToolsAiAgent implements IAAgent {
     const rawModel = (process.env.BASIC_MODEL ?? '').trim()
     this.model = rawModel === '' ? 'llama-3.1-70b-versatile' : rawModel
     this.integrationId = integrationId
+    const maxImportant = Number(process.env.AI_MEMORY_MAX_IMPORTANT ?? '50')
+    this.maxImportantMemories = Number.isFinite(maxImportant) ? maxImportant : 50
+    const host = (process.env.HOST ?? '').trim()
+    this.memoriesHost = host
     this.tools = []
     this.toolsLoaded = false
   }
@@ -89,26 +95,34 @@ export class ToolsAiAgent implements IAAgent {
     if (importance?.important === true) {
       const summary = this.normalizeImportantSummary(importance.summary ?? '')
       if (summary !== '') {
-        const matches = await this.findSimilarImportantMemories(scopedUserId, summary)
-        const decision = await this.decideMemoryAction(summary, matches)
-        if (decision.action === 'update' && decision.targetId != null) {
-          const updated = (decision.summary ?? summary).trim()
-          if (updated !== '') {
-            await this.memoryStore.updateMemory(
-              decision.targetId,
-              `Importante: ${updated}`,
-              createHashEmbedding(updated)
-            )
+        const importantCount = await this.countImportantMemories(scopedUserId)
+        if (importantCount >= this.maxImportantMemories) {
+          const link = this.buildMemoriesLink()
+          if (link !== '') {
+            finalAnswer = `${finalAnswer}\n\nVocê atingiu o limite de memórias importantes. Gerencie em: ${link}`
           }
-        } else if (decision.action === 'add') {
-          const updated = (decision.summary ?? summary).trim()
-          if (updated !== '') {
-            await this.memoryStore.addMemory(
-              scopedUserId,
-              `Importante: ${updated}`,
-              createHashEmbedding(updated),
-              'important'
-            )
+        } else {
+          const matches = await this.findSimilarImportantMemories(scopedUserId, summary)
+          const decision = await this.decideMemoryAction(summary, matches)
+          if (decision.action === 'update' && decision.targetId != null) {
+            const updated = (decision.summary ?? summary).trim()
+            if (updated !== '') {
+              await this.memoryStore.updateMemory(
+                decision.targetId,
+                `Importante: ${updated}`,
+                createHashEmbedding(updated)
+              )
+            }
+          } else if (decision.action === 'add') {
+            const updated = (decision.summary ?? summary).trim()
+            if (updated !== '') {
+              await this.memoryStore.addMemory(
+                scopedUserId,
+                `Importante: ${updated}`,
+                createHashEmbedding(updated),
+                'important'
+              )
+            }
           }
         }
       }
@@ -394,5 +408,18 @@ export class ToolsAiAgent implements IAAgent {
 
   private normalizeImportantSummary (summary: string): string {
     return summary.replace(/\s+/g, ' ').trim()
+  }
+
+  private async countImportantMemories (userId: string): Promise<number> {
+    const rows = await this.memoryStore.listRecent(userId, this.maxImportantMemories + 1, 'important')
+    return rows.length
+  }
+
+  private buildMemoriesLink (): string {
+    if (this.memoriesHost === '') return ''
+    const normalized = this.memoriesHost.endsWith('/')
+      ? this.memoriesHost.slice(0, -1)
+      : this.memoriesHost
+    return `${normalized}/memories`
   }
 }
