@@ -3,6 +3,7 @@ import { IMessageType } from './IMessageType'
 export interface IMessage {
   readonly body: string
   readonly sender: string
+  readonly senderPhone?: string
   readonly senderName?: string
   readonly chatId: string
   readonly caption?: string

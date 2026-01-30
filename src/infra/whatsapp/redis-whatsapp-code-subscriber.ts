@@ -4,6 +4,7 @@ import { IClient } from '../../main/protocols/IClient'
 
 export class RedisWhatsappCodeSubscriber implements IWhatsAppCodeSubscriber {
   private readonly subscriber: Redis
+  private readonly publisher: Redis
   private readonly client: IClient
 
   constructor (client: IClient) {
@@ -14,6 +15,7 @@ export class RedisWhatsappCodeSubscriber implements IWhatsAppCodeSubscriber {
 
     this.client = client
     this.subscriber = new Redis(redisUrl)
+    this.publisher = new Redis(redisUrl)
   }
 
   start (): void {
@@ -29,7 +31,8 @@ export class RedisWhatsappCodeSubscriber implements IWhatsAppCodeSubscriber {
       }
 
       try {
-        const payload = JSON.parse(message) as { phone?: string, code?: string }
+        const payload = JSON.parse(message) as { id?: string, phone?: string, code?: string }
+        const requestId = payload.id ?? ''
         const phone = payload.phone ?? ''
         const code = payload.code ?? ''
 
@@ -38,7 +41,7 @@ export class RedisWhatsappCodeSubscriber implements IWhatsAppCodeSubscriber {
           return
         }
 
-        void this.sendWhatsAppCode(phone, code).catch((err) => {
+        void this.sendWhatsAppCode(phone, code, requestId).catch((err) => {
           console.error('Failed to send WhatsApp code:', err)
         })
       } catch (err) {
@@ -51,17 +54,26 @@ export class RedisWhatsappCodeSubscriber implements IWhatsAppCodeSubscriber {
     return phone.replace(/\D/g, '')
   }
 
-  private async sendWhatsAppCode (phone: string, code: string): Promise<void> {
+  private async sendWhatsAppCode (phone: string, code: string, requestId: string): Promise<void> {
     const digits = this.normalizePhone(phone)
     if (digits.length < 10 || digits.length > 15) {
       throw new Error('Invalid phone number')
     }
 
+    const mapping = await this.client.getPnLidEntry(`${digits}@c.us`)
+    const lid = mapping?.lid?._serialized
     const chatId = await this.client.getNumberId(digits)
     if (chatId == null || chatId === '') {
       throw new Error('Número de WhatsApp não encontrado ou não registrado')
     }
 
     await this.client.sendText(chatId, `Seu código de confirmação é: ${code}`)
+    if (requestId !== '') {
+      await this.publisher.publish('whatsapp.code_sent', JSON.stringify({
+        id: requestId,
+        phone,
+        lid: lid ?? chatId
+      }))
+    }
   }
 }

@@ -3,10 +3,12 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
 import { createWhatsAppCode } from '../../../lib/whatsappVerification'
 import Redis from 'ioredis'
+import { randomUUID } from 'node:crypto'
 
 interface ResponseBody {
   success?: boolean
   error?: string
+  lid?: string | null
 }
 
 interface RequestBody {
@@ -59,18 +61,49 @@ export default async function handler (req: NextApiRequest, res: NextApiResponse
     return
   }
 
+  const requestId = randomUUID()
   const redis = new Redis(redisUrl)
+  const subscriber = new Redis(redisUrl)
+  const waitForLid = async (): Promise<string | null> => {
+    await subscriber.subscribe('whatsapp.code_sent')
+    return await new Promise((resolve) => {
+      let settled = false
+      const timeout = setTimeout(() => {
+        if (!settled) {
+          settled = true
+          resolve(null)
+        }
+      }, 5000)
+
+      subscriber.on('message', (channel, message) => {
+        if (channel !== 'whatsapp.code_sent' || settled) return
+        try {
+          const payload = JSON.parse(message) as { id?: string, lid?: string, phone?: string }
+          if (payload.id !== requestId) return
+          settled = true
+          clearTimeout(timeout)
+          resolve(payload.lid ?? null)
+        } catch {
+          // ignore invalid payloads
+        }
+      })
+    })
+  }
   try {
+    const lidPromise = waitForLid()
     await redis.publish('whatsapp.send_code', JSON.stringify({
+      id: requestId,
       phone: entry.phone,
       code: entry.code
     }))
+    const lid = await lidPromise
+    res.status(200).json({ success: true, lid })
+    return
   } catch (err) {
     res.status(500).json({ error: 'Falha ao enviar o código pelo bot.' })
     return
   } finally {
     await redis.quit()
+    await subscriber.quit()
   }
-
-  res.status(200).json({ success: true })
 }

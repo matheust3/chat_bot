@@ -21,6 +21,7 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
   let fromAdmin = false
   let senderId = ''
   let senderName: string | undefined
+  let senderPhone: string | undefined
 
   const body = message.body ?? ''
   const caption = message.caption
@@ -100,6 +101,17 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
       senderId = message.sender?.id ?? ''
     }
 
+    const senderIdCandidate = message.sender as unknown as { id?: { user?: string, _serialized?: string } }
+    const rawUser = senderIdCandidate.id?.user
+    if (typeof rawUser === 'string' && rawUser.trim() !== '') {
+      senderPhone = rawUser.trim()
+    } else if (typeof senderId === 'string' && senderId !== '') {
+      const maybeNumber = senderId.split('@')[0]
+      if (maybeNumber != null && maybeNumber.trim() !== '') {
+        senderPhone = maybeNumber.trim()
+      }
+    }
+
     const senderCandidate = message.sender as unknown as { pushname?: string, name?: string, shortName?: string, formattedName?: string }
     senderName = senderCandidate.pushname ?? senderCandidate.name ?? senderCandidate.shortName ?? senderCandidate.formattedName
   }
@@ -112,6 +124,7 @@ export const messageAdapter = async (message: Message & { fromMe?: boolean, capt
     from: message.from,
     fromAdmin,
     sender: senderId,
+    senderPhone,
     senderName,
     groupId,
     groupName,

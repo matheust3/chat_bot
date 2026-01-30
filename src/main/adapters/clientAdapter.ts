@@ -44,6 +44,11 @@ export const clientAdapter = (client: Whatsapp): IClient => {
       const serialized = (status.id as { _serialized?: string })?._serialized
       return serialized
     },
+    getPnLidEntry: async (phoneOrLid: string) => {
+      const contactId = phoneOrLid.includes('@') ? phoneOrLid : `${phoneOrLid}@c.us`
+      const entry = await client.getPnLidEntry(contactId)
+      return entry as { lid?: { _serialized?: string }, phoneNumber?: { _serialized?: string } }
+    },
     deleteMessage: async (chatId: string, messageId: string) => {
       await client.deleteMessage(chatId, messageId, false, true)
     },

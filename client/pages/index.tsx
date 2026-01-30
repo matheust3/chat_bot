@@ -13,6 +13,7 @@ export default function Home (): ReactElement {
   const [phone, setPhone] = useState('')
   const [whatsAppCode, setWhatsAppCode] = useState('')
   const [whatsAppStep, setWhatsAppStep] = useState<'input' | 'code' | 'verified'>('input')
+  const [whatsappLid, setWhatsappLid] = useState<string | null>(null)
   const [whatsAppError, setWhatsAppError] = useState('')
   const [whatsAppLoading, setWhatsAppLoading] = useState(false)
   const [unlinkLoading, setUnlinkLoading] = useState(false)
@@ -114,11 +115,12 @@ export default function Home (): ReactElement {
         })
       })
 
-      const data = await result.json() as { error?: string }
+      const data = await result.json() as { error?: string, lid?: string | null }
 
       if (!result.ok) {
         setWhatsAppError(data.error ?? 'Erro ao enviar o código do WhatsApp.')
       } else {
+        setWhatsappLid(data.lid ?? null)
         setWhatsAppStep('code')
       }
     } catch (err) {
@@ -140,7 +142,8 @@ export default function Home (): ReactElement {
         body: JSON.stringify({
           email: session?.user?.email ?? '',
           phone: `${countryCode}${phone}`,
-          code: whatsAppCode
+          code: whatsAppCode,
+          lid: whatsappLid
         })
       })
 

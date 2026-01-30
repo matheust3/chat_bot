@@ -13,6 +13,7 @@ interface RequestBody {
   email?: string
   phone?: string
   code?: string
+  lid?: string
 }
 
 export default async function handler (req: NextApiRequest, res: NextApiResponse<ResponseBody>): Promise<void> {
@@ -29,10 +30,11 @@ export default async function handler (req: NextApiRequest, res: NextApiResponse
     return
   }
 
-  const { email, phone, code } = req.body as RequestBody
+  const { email, phone, code, lid } = req.body as RequestBody
   const normalizedEmail = (email ?? '').trim().toLowerCase()
   const normalizedPhone = (phone ?? '').replace(/\s+/g, '')
   const normalizedCode = (code ?? '').trim()
+  const normalizedLid = (lid ?? '').trim()
 
   if (normalizedEmail === '' || normalizedPhone === '' || normalizedCode === '') {
     res.status(400).json({ error: 'Email, telefone e código são obrigatórios.' })
@@ -58,15 +60,29 @@ export default async function handler (req: NextApiRequest, res: NextApiResponse
     },
     data: {
       whatsappNumber: null,
-      whatsappVerifiedAt: null
+      whatsappVerifiedAt: null,
+      whatsappLid: null
     }
   })
+
+  if (normalizedLid !== '') {
+    await PrismaClientInstance.user.updateMany({
+      where: {
+        whatsappLid: normalizedLid,
+        email: { not: normalizedEmail }
+      },
+      data: {
+        whatsappLid: null
+      }
+    })
+  }
 
   await PrismaClientInstance.user.update({
     where: { email: normalizedEmail },
     data: {
       whatsappNumber: normalizedPhone,
-      whatsappVerifiedAt: new Date()
+      whatsappVerifiedAt: new Date(),
+      whatsappLid: normalizedLid === '' ? undefined : normalizedLid
     }
   })
 
