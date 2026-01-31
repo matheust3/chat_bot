@@ -61,3 +61,16 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+model AiMemory {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  content   String
+  embedding Json
+  createdAt DateTime @default(now()) @map("created_at")
+  kind      String   @default("conversation")
+
+  @@index([userId, createdAt])
+  @@index([userId, kind, createdAt])
+  @@map("ai_memory")
+}
