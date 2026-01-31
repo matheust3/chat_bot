@@ -205,7 +205,7 @@ export class ToolsAiAgent implements IAAgent {
           { role: 'user', content: message }
         ],
         temperature: 0.2,
-        response_format: { type: 'text' }
+        response_format: { type: 'json_object' }
       })
 
       return completion.choices[0]?.message?.content?.trim() ?? ''
@@ -327,7 +327,7 @@ export class ToolsAiAgent implements IAAgent {
   }
 
   private parseAnswer (content: string): ToolingAnswer {
-    const parsed = this.safeParse(content)
+    const parsed = this.safeParse(content) ?? this.safeParseEscaped(content)
     if (parsed?.answer != null && typeof parsed.answer === 'string') {
       return { answer: parsed.answer }
     }
@@ -341,6 +341,20 @@ export class ToolsAiAgent implements IAAgent {
     const match = content.match(/\{[\s\S]*\}/)
     if (match == null) return null
     try {
+      return JSON.parse(match[0]) as ToolingAnswer
+    } catch {
+      return null
+    }
+  }
+
+  private safeParseEscaped (content: string): ToolingAnswer | null {
+    const trimmed = content.trim()
+    if (!trimmed.startsWith('"') || !trimmed.endsWith('"')) return null
+    try {
+      const inner = JSON.parse(trimmed) as string
+      if (typeof inner !== 'string') return null
+      const match = inner.match(/\{[\s\S]*\}/)
+      if (match == null) return null
       return JSON.parse(match[0]) as ToolingAnswer
     } catch {
       return null
