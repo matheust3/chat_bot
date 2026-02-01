@@ -6,15 +6,16 @@ services:
     restart: always
     user: ubuntu
     environment:
-      - GROQ_API_KEY=${GROQ_API_KEY}
-      - BASIC_MODEL=${BASIC_MODEL}
+      - AI_BASE_URL=${AI_BASE_URL}
+      - AI_API_KEY=${AI_API_KEY}
+      - AI_MODEL=${AI_MODEL}
       - PAGARME_API_KEY=${PAGARME_API_KEY}
       - PLAN_ID=${PLAN_ID}
       - DATABASE_URL=postgresql://chatbot:chatbot@postgres:5432/chatbot?schema=public
       - REDIS_URL=redis://redis:6379
     volumes:
       - ${DEV_ROOT_DIR}:/home/developer/chat
-    command: bash -c "cd chat && npm i -g npm@10.8.1 && npm install && npm run build && npx prisma generate && npm run start"
+    command: bash -c "cd chat && npm i -g npm@10.8.1 && npm install && npm run build && npx prisma generate && npx puppeteer browsers install chrome && npm run start"
     logging:
       options:
         max-size: "10m"

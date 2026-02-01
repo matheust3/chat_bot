@@ -1,6 +1,6 @@
 import { IClient } from '../protocols/IClient'
 import { IMessage } from '../protocols/IMessage'
-import { ToolsAiAgent } from '../../data/services/tools-ai-agent'
+import { ToolsAiAgent } from '../../data/services/tools-ai-agent.js'
 import { PrismaClientInstance } from '../../infra/prisma-client'
 
 const aiAgent = new ToolsAiAgent('whatsapp')
