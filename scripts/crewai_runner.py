@@ -22,6 +22,7 @@ def main() -> None:
 
     message = str(payload.get("message", "")).strip()
     context = str(payload.get("context", "")).strip()
+    user_id = str(payload.get("userId", "")).strip() or "default"
 
     if message == "":
         print(json.dumps({"error": "Mensagem vazia."}))
@@ -76,7 +77,43 @@ def main() -> None:
     ).strip()
 
     task = Task(description=prompt, agent=agent)
-    crew = Crew(agents=[agent], tasks=[task], process=Process.sequential, verbose=False)
+
+    crew_kwargs = dict(
+        agents=[agent],
+        tasks=[task],
+        process=Process.sequential,
+        verbose=False,
+    )
+
+    memory_enabled = os.getenv("CREWAI_MEMORY", "true").lower() not in {
+        "0",
+        "false",
+        "no",
+    }
+    if memory_enabled:
+        memory_dir = os.getenv("CREWAI_MEMORY_DIR") or "/tmp/crewai_memory"
+        user_memory_dir = os.path.join(memory_dir, user_id)
+        os.makedirs(user_memory_dir, exist_ok=True)
+        try:
+            crew = Crew(
+                **crew_kwargs,
+                memory=True,
+                memory_config={
+                    "storage": {"path": user_memory_dir},
+                    "user_id": user_id,
+                },
+            )
+        except TypeError:
+            try:
+                crew = Crew(
+                    **crew_kwargs,
+                    memory=True,
+                    memory_config={"storage": {"path": user_memory_dir}},
+                )
+            except TypeError:
+                crew = Crew(**crew_kwargs, memory=True)
+    else:
+        crew = Crew(**crew_kwargs)
 
     try:
         result = crew.kickoff()
