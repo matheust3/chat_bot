@@ -9,8 +9,6 @@ import commands from './config/commands'
 import middlewares from './config/middlewares'
 import { clientAdapter } from './adapters/clientAdapter'
 import { createWhatsAppCodeSubscriber } from './helpers/whatsapp-code-subscriber-factory'
-import { MemoryCleanupService, loadMemoryCleanupConfig } from '../infra/ai/memory-cleanup-service'
-import { VectorMemoryStore } from '../infra/ai/vector-memory-store'
 
 interface IOriginQuotedMsg {
   id: {
@@ -35,9 +33,6 @@ setInterval(() => {
     })
   }
 }, 900000)
-
-const memoryCleanup = new MemoryCleanupService(new VectorMemoryStore(), loadMemoryCleanupConfig())
-memoryCleanup.start()
 
 create({
   session: 'stickerBot',
