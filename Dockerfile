@@ -8,7 +8,7 @@ RUN apt install ./google-chrome-stable_current_amd64.deb -y
 # Usuario de desenvolvimento
 USER ubuntu
 # Instala CrewAI (Python)
-RUN python3 -m pip install --no-cache-dir --break-system-packages crewai
+RUN python3 -m pip install --no-cache-dir --break-system-packages crewai litellm langchain-postgres psycopg2-binary langchain-openai
 # Cria a pasta developer
 WORKDIR /home/developer
 # Instala o node

@@ -1,17 +1,38 @@
+"""Minimal CrewAI runner.
+
+Reads a JSON payload from stdin and returns a JSON response to stdout.
+This script is intentionally small and avoids external memory/storage.
+
+Input (stdin JSON):
+    {"message":"...","context":"..."}
+
+Output (stdout JSON):
+    {"answer":"..."} or {"error":"..."}
+"""
+
 import json
 import os
 import sys
+import io
+import contextlib
+import re
 
 
 def main() -> None:
+    """Entry point for running a single CrewAI task."""
+    # Disable tracing/telemetry to keep stdout clean (JSON only).
+    os.environ.setdefault("CREWAI_TRACING_ENABLED", "false")
+    os.environ.setdefault("CREWAI_TRACING_DISABLED", "true")
+    os.environ.setdefault("CREWAI_DISABLE_TELEMETRY", "true")
+
     try:
         from crewai import Agent, Task, Crew, Process
         try:
             from crewai import LLM  # type: ignore
         except Exception:
             LLM = None  # type: ignore
-    except Exception:
-        print(json.dumps({"error": "crewai não instalado. Execute: pip install crewai"}))
+    except Exception as e:
+        print(json.dumps({"error": f"Erro ao importar CrewAI: {e}"}))
         return
 
     try:
@@ -20,14 +41,15 @@ def main() -> None:
         print(json.dumps({"error": "Entrada inválida para o CrewAI."}))
         return
 
+    # Basic inputs
     message = str(payload.get("message", "")).strip()
     context = str(payload.get("context", "")).strip()
-    user_id = str(payload.get("userId", "")).strip() or "default"
 
     if message == "":
         print(json.dumps({"error": "Mensagem vazia."}))
         return
 
+    # Model configuration (OpenAI-compatible envs supported).
     model = (
         os.getenv("CREWAI_MODEL")
         or os.getenv("AI_MODEL")
@@ -55,6 +77,7 @@ def main() -> None:
     if os.getenv("OPENAI_MODEL_NAME") is None and model != "":
         os.environ["OPENAI_MODEL_NAME"] = model
 
+    # Build LLM instance when available; fallback to CrewAI defaults.
     llm = None
     if LLM is not None:
         try:
@@ -62,6 +85,7 @@ def main() -> None:
         except Exception:
             llm = None
 
+    # Single agent, single task.
     agent = Agent(
         role="Assistente",
         goal="Responder o usuário com clareza e objetividade.",
@@ -71,57 +95,45 @@ def main() -> None:
         llm=llm,
     )
 
+    # Prompt includes optional context plus the user's message.
     prompt = (
         f"{context}\n\nUsuário: {message}\n\n"
         "Responda ao usuário de forma útil e objetiva."
     ).strip()
 
-    task = Task(description=prompt, agent=agent)
+    task = Task(
+        description=prompt,
+        agent=agent,
+        expected_output="Resposta clara e objetiva ao usuário, em português.",
+    )
 
-    crew_kwargs = dict(
+    crew = Crew(
         agents=[agent],
         tasks=[task],
         process=Process.sequential,
         verbose=False,
     )
 
-    memory_enabled = os.getenv("CREWAI_MEMORY", "true").lower() not in {
-        "0",
-        "false",
-        "no",
-    }
-    if memory_enabled:
-        memory_dir = os.getenv("CREWAI_MEMORY_DIR") or "/tmp/crewai_memory"
-        user_memory_dir = os.path.join(memory_dir, user_id)
-        os.makedirs(user_memory_dir, exist_ok=True)
-        try:
-            crew = Crew(
-                **crew_kwargs,
-                memory=True,
-                memory_config={
-                    "storage": {"path": user_memory_dir},
-                    "user_id": user_id,
-                },
-            )
-        except TypeError:
-            try:
-                crew = Crew(
-                    **crew_kwargs,
-                    memory=True,
-                    memory_config={"storage": {"path": user_memory_dir}},
-                )
-            except TypeError:
-                crew = Crew(**crew_kwargs, memory=True)
-    else:
-        crew = Crew(**crew_kwargs)
-
+    # Capture stdout/stderr from CrewAI to keep JSON-only output.
     try:
-        result = crew.kickoff()
+        stdout_buffer = io.StringIO()
+        stderr_buffer = io.StringIO()
+        with contextlib.redirect_stdout(stdout_buffer), contextlib.redirect_stderr(stderr_buffer):
+            result = crew.kickoff()
     except Exception as exc:
+        err_logs = stderr_buffer.getvalue().strip()
+        if err_logs != "":
+            sys.stderr.write(err_logs + "\n")
         print(json.dumps({"error": f"Erro no CrewAI: {exc}"}))
         return
 
     answer = str(result).strip()
+    err_logs = stderr_buffer.getvalue().strip()
+    if err_logs != "":
+        sys.stderr.write(err_logs + "\n")
+    if "<think>" in answer.lower():
+        answer = re.sub(r"<think>[\s\S]*?</think>", "", answer, flags=re.IGNORECASE).strip()
+
     print(json.dumps({"answer": answer}))
 
 
