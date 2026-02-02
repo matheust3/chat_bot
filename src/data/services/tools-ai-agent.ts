@@ -2,6 +2,16 @@ import { IAAgent } from '../../domain/services/ai-agent'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
 
+const parseJsonFromOutput = (content: string): { answer?: string, error?: string } | null => {
+  const match = content.match(/\{[\s\S]*\}/)
+  if (match == null) return null
+  try {
+    return JSON.parse(match[0]) as { answer?: string, error?: string }
+  } catch {
+    return null
+  }
+}
+
 const runCrewAi = async (payload: { message: string, userId: string }): Promise<{ answer?: string, error?: string }> => {
   const runner = path.resolve(process.cwd(), 'scripts', 'crewai_runner.py')
   const pythonEnv = String(process.env.CREWAI_PYTHON ?? '').trim()
@@ -25,11 +35,12 @@ const runCrewAi = async (payload: { message: string, userId: string }): Promise<
         resolve({ error: err !== '' ? err : 'Resposta vazia do CrewAI.' })
         return
       }
-      try {
-        resolve(JSON.parse(content) as { answer?: string, error?: string })
-      } catch {
-        resolve({ error: `Resposta inválida do CrewAI: ${content}` })
+      const parsed = parseJsonFromOutput(content)
+      if (parsed != null) {
+        resolve(parsed)
+        return
       }
+      resolve({ error: `Resposta inválida do CrewAI: ${content}` })
     })
 
     child.stdin.write(JSON.stringify(payload))
