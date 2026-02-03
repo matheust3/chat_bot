@@ -1,5 +1,4 @@
 import json
-import math
 import os
 import re
 import sys
@@ -36,44 +35,12 @@ def _sanitize_database_url(url: str) -> str:
 	return urlunsplit((parts.scheme, parts.netloc, parts.path, new_query, parts.fragment))
 
 
-def _normalize_text(text: str) -> str:
-	return re.sub(r"[^\w\sÀ-ÿ]+", " ", text.lower(), flags=re.UNICODE).strip()
-
-
-def _hash_embedding(text: str, dimensions: int = 256) -> list[float]:
-	vector = [0.0] * dimensions
-	normalized = _normalize_text(text)
-	if normalized == "":
-		return vector
-
-	for token in re.split(r"\s+", normalized):
-		hash_value = 0
-		for ch in token:
-			hash_value = ((hash_value << 5) - hash_value) + ord(ch)
-			hash_value &= 0xFFFFFFFF
-		index = abs(hash_value) % dimensions
-		vector[index] += 1.0
-
-	return _normalize_vector(vector)
-
-
-def _normalize_vector(vector: list[float]) -> list[float]:
-	norm = math.sqrt(sum(value * value for value in vector))
-	if norm == 0:
-		return vector
-	return [value / norm for value in vector]
-
-
-def _cosine_similarity(a: list[float], b: list[float]) -> float:
-	size = min(len(a), len(b))
-	if size == 0:
-		return 0.0
-	dot = sum(a[i] * b[i] for i in range(size))
-	norm_a = math.sqrt(sum(a[i] * a[i] for i in range(size)))
-	norm_b = math.sqrt(sum(b[i] * b[i] for i in range(size)))
-	if norm_a == 0 or norm_b == 0:
-		return 0.0
-	return dot / (norm_a * norm_b)
+def _strip_think(text: str) -> str:
+	if text.strip() == "":
+		return text
+	cleaned = re.sub(r"<\s*think\s*>[\s\S]*?<\s*/\s*think\s*>", "", text, flags=re.IGNORECASE)
+	cleaned = re.sub(r"\bthink:\s*[\s\S]*$", "", cleaned, flags=re.IGNORECASE)
+	return cleaned.strip()
 
 
 IMPORTANT_MEMORY_PATTERNS: tuple[re.Pattern, ...] = (
@@ -100,243 +67,120 @@ def _is_important_memory_fallback(text: str) -> bool:
 def _ensure_schema(cursor) -> None:
 	cursor.execute(
 		"""
-		CREATE TABLE IF NOT EXISTS ai_memory (
-			id TEXT PRIMARY KEY,
+		CREATE TABLE IF NOT EXISTS ai_memory_context (
 			user_id TEXT NOT NULL,
-			content TEXT NOT NULL,
-			embedding JSONB NOT NULL,
-			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			kind TEXT NOT NULL DEFAULT 'conversation'
+			kind TEXT NOT NULL,
+			content TEXT NOT NULL DEFAULT '',
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			PRIMARY KEY (user_id, kind)
 		);
 		"""
 	)
 	cursor.execute(
 		"""
-		ALTER TABLE ai_memory
-		ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'conversation';
-		"""
-	)
-	cursor.execute(
-		"""
-		CREATE INDEX IF NOT EXISTS ai_memory_user_created_idx
-		ON ai_memory (user_id, created_at DESC);
-		"""
-	)
-	cursor.execute(
-		"""
-		CREATE INDEX IF NOT EXISTS ai_memory_user_kind_created_idx
-		ON ai_memory (user_id, kind, created_at DESC);
+		CREATE INDEX IF NOT EXISTS ai_memory_context_user_kind_idx
+		ON ai_memory_context (user_id, kind);
 		"""
 	)
 
 
-def _list_recent(cursor, user_id: str, limit: int) -> list[dict]:
+def _get_user_context(cursor, user_id: str, kind: str) -> str:
 	cursor.execute(
 		"""
-		SELECT id, content, embedding, created_at, kind
-		FROM ai_memory
-		WHERE user_id = %s
-		ORDER BY created_at DESC
-		LIMIT %s;
+		SELECT content
+		FROM ai_memory_context
+		WHERE user_id = %s AND kind = %s;
 		""",
-		(user_id, limit),
+		(user_id, kind),
 	)
-	rows = cursor.fetchall()
-	result: list[dict] = []
-	for row in rows:
-		embedding = row[2]
-		if isinstance(embedding, str):
-			try:
-				embedding = json.loads(embedding)
-			except json.JSONDecodeError:
-				embedding = []
-		result.append(
-			{
-				"id": str(row[0]),
-				"content": str(row[1]),
-				"embedding": embedding if isinstance(embedding, list) else [],
-				"created_at": row[3],
-				"kind": str(row[4]) if row[4] is not None else "conversation",
-			}
-		)
-	return result
+	row = cursor.fetchone()
+	if row is None:
+		return ""
+	return str(row[0] or "")
 
 
-def _prune_by_max(cursor, kind: str, max_per_user: int) -> None:
-	if not isinstance(max_per_user, int) or max_per_user <= 0:
-		return
+def _upsert_user_context(cursor, user_id: str, kind: str, content: str) -> None:
 	cursor.execute(
 		"""
-		DELETE FROM ai_memory
-		WHERE id IN (
-			SELECT id FROM (
-				SELECT id,
-					ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC) AS rn
-				FROM ai_memory
-				WHERE kind = %s
-			) ranked
-			WHERE ranked.rn > %s
-		);
+		INSERT INTO ai_memory_context (user_id, kind, content, updated_at)
+		VALUES (%s, %s, %s, NOW())
+		ON CONFLICT (user_id, kind)
+		DO UPDATE SET content = EXCLUDED.content, updated_at = NOW();
 		""",
-		(kind, max_per_user),
+		(user_id, kind, content),
 	)
 
 
-def _parse_json_array(content: str) -> list[str] | None:
-	match = re.search(r"\[[\s\S]*\]", content)
-	if match is None:
-		return None
-	try:
-		parsed = json.loads(match.group(0))
-		if isinstance(parsed, list):
-			return [str(item) for item in parsed]
-	except json.JSONDecodeError:
-		return None
-	return None
-
-
-def _select_important_to_keep(llm: LLM, memories: list[dict], max_keep: int) -> list[str] | None:
-	if max_keep <= 0:
-		return []
-	classifier = Agent(
-		role="Curador de memória",
-		goal="Escolher as memórias importantes mais relevantes para manter.",
+def _summarize_context(llm: LLM, text: str, kind: str, max_chars: int) -> str:
+	if text.strip() == "":
+		return ""
+	summarizer = Agent(
+		role="Resumidor de memória",
+		goal="Resumir o contexto do usuário de forma curta e útil.",
 		backstory=(
-			"Você seleciona as memórias mais úteis e duradouras (dados pessoais, preferências estáveis,"
-			" informações de longo prazo) e descarta as menos relevantes."
+			"Você comprime o contexto mantendo fatos importantes, preferências e detalhes duradouros."
 		),
 		llm=llm,
 		allow_delegation=False,
 		verbose=False,
 	)
 
-	formatted = []
-	for record in memories:
-		formatted.append(
-			{
-				"id": record.get("id"),
-				"created_at": str(record.get("created_at")),
-				"content": record.get("content", ""),
-			}
+	if kind == "important":
+		instructions = (
+			"Resuma somente memórias importantes e de longo prazo."
+			" Preserve dados pessoais estáveis e preferências duradouras."
+		)
+	else:
+		instructions = (
+			"Resuma o contexto recente da conversa e mantenha detalhes úteis."
 		)
 
 	task = Task(
 		description=(
-			"Retorne SOMENTE um JSON array com os IDs das memórias a manter. "
-			"Mantenha exatamente {max_keep} IDs (ou menos se houver menos itens).\n\n"
-			"Memórias:\n{memories}"
+			"{instructions}\n"
+			"Limite o resumo a no máximo {max_chars} caracteres.\n\n"
+			"Contexto atual:\n{context}"
 		),
-		expected_output="Um JSON array com IDs para manter.",
-		agent=classifier,
+		expected_output="Um resumo curto em texto corrido.",
+		agent=summarizer,
 	)
 
-	crew = Crew(agents=[classifier], tasks=[task], verbose=False)
-	result = crew.kickoff(inputs={"memories": json.dumps(formatted, ensure_ascii=False), "max_keep": max_keep})
-	parsed = _parse_json_array(str(result))
-	if parsed is None:
-		return None
-	return parsed[:max_keep]
+	crew = Crew(agents=[summarizer], tasks=[task], verbose=False)
+	result = crew.kickoff(inputs={"context": text, "max_chars": max_chars, "instructions": instructions})
+	summary = _strip_think(str(result))
+	if summary == "":
+		return _strip_think(text)[:max_chars].rstrip()
+	return summary
 
 
-def _prune_important_by_relevance(cursor, llm: LLM, user_id: str, max_keep: int) -> None:
-	if not isinstance(max_keep, int) or max_keep <= 0:
+def _append_to_context(cursor, llm: LLM, user_id: str, kind: str, new_text: str) -> None:
+	if new_text.strip() == "":
 		return
-
-	cursor.execute(
-		"""
-		SELECT id, content, created_at
-		FROM ai_memory
-		WHERE user_id = %s AND kind = 'important'
-		ORDER BY created_at DESC;
-		""",
-		(user_id,),
-	)
-	rows = cursor.fetchall()
-	if len(rows) <= max_keep:
-		return
-
-	memories = [
-		{"id": str(row[0]), "content": str(row[1]), "created_at": row[2]}
-		for row in rows
-	]
-
-	keep_ids = _select_important_to_keep(llm, memories, max_keep)
-	if keep_ids is None or len(keep_ids) == 0:
-		_prune_by_max(cursor, "important", max_keep)
-		return
-
-	cursor.execute(
-		"""
-		DELETE FROM ai_memory
-		WHERE user_id = %s AND kind = 'important' AND id <> ALL(%s);
-		""",
-		(user_id, keep_ids),
-	)
+	new_text = _strip_think(new_text)
+	max_chars = int(float(_env("AI_MEMORY_CONTEXT_MAX_CHARS") or "4000"))
+	summary_max_chars = int(float(_env("AI_MEMORY_CONTEXT_SUMMARY_MAX_CHARS") or "1200"))
+	current = _strip_think(_get_user_context(cursor, user_id, kind))
+	combined = f"{current}\n{new_text}".strip() if current else new_text
+	if len(combined) > max_chars:
+		combined = _summarize_context(llm, combined, kind, summary_max_chars)
+		if len(combined) > summary_max_chars:
+			combined = combined[:summary_max_chars].rstrip()
+	_upsert_user_context(cursor, user_id, kind, combined)
 
 
-def _build_memory_context(cursor, user_id: str, query: str) -> str:
-	context_limit = int(float(_env("AI_MEMORY_CONTEXT_LIMIT") or "8"))
-	threshold = float(_env("AI_MEMORY_SIMILARITY_THRESHOLD") or "0.25")
+def _build_memory_context(cursor, user_id: str) -> str:
+	conversation_context = _get_user_context(cursor, user_id, "conversation")
+	important_context = _get_user_context(cursor, user_id, "important")
 
-	if query.strip() == "":
-		return ""
+	parts = []
+	if important_context.strip() != "":
+		parts.append("Memórias importantes de longo prazo:")
+		parts.append(important_context)
+	if conversation_context.strip() != "":
+		parts.append("Resumo da conversa recente:")
+		parts.append(conversation_context)
 
-	recent = _list_recent(cursor, user_id, 60)
-	if len(recent) == 0:
-		return ""
-
-	query_embedding = _hash_embedding(query)
-
-	scored = [
-		{
-			"record": record,
-			"score": _cosine_similarity(query_embedding, record.get("embedding", [])),
-		}
-		for record in recent
-	]
-
-	important = sorted(
-		[entry for entry in scored if entry["record"].get("kind") == "important"],
-		key=lambda item: item["record"].get("created_at"),
-		reverse=True,
-	)[:3]
-
-	relevant = sorted(
-		[entry for entry in scored if entry["score"] >= threshold],
-		key=lambda item: item["score"],
-		reverse=True,
-	)
-
-	picked: list[dict] = []
-	seen: set[str] = set()
-
-	for item in important:
-		record = item["record"]
-		record_id = record.get("id")
-		if record_id in seen:
-			continue
-		picked.append(record)
-		seen.add(record_id)
-
-	for item in relevant:
-		if len(picked) >= context_limit:
-			break
-		record = item["record"]
-		record_id = record.get("id")
-		if record_id in seen:
-			continue
-		picked.append(record)
-		seen.add(record_id)
-
-	if len(picked) == 0:
-		return ""
-
-	lines = []
-	for record in picked:
-		prefix = "[importante] " if record.get("kind") == "important" else ""
-		lines.append(f"- {prefix}{record.get('content', '')}")
-
-	return "\n".join(lines)
+	return _strip_think("\n\n".join(parts).strip())
 
 
 def _classify_memory_kind(llm: LLM, message: str) -> str:
@@ -418,7 +262,7 @@ def main() -> None:
 				with psycopg2.connect(database_url) as conn:
 					with conn.cursor() as cursor:
 						_ensure_schema(cursor)
-						memory_context = _build_memory_context(cursor, user_id, message)
+						memory_context = _build_memory_context(cursor, user_id)
 						conn.commit()
 			except Exception as exc:  # noqa: BLE001
 				print(json.dumps({"error": f"Erro ao carregar memória: {exc}"}, ensure_ascii=False))
@@ -442,7 +286,7 @@ def main() -> None:
 
 	try:
 		result = crew.kickoff(inputs={"message": message})
-		answer = str(result).strip()
+		answer = _strip_think(str(result))
 		if answer == "":
 			print(json.dumps({"error": "Não consegui responder agora."}, ensure_ascii=False))
 			return
@@ -456,18 +300,9 @@ def main() -> None:
 							_ensure_schema(cursor)
 							kind = _classify_memory_kind(llm, message)
 							content = f"Usuário: {message}\nAssistente: {answer}"
-							embedding = _hash_embedding(f"{message}\n{answer}")
-							cursor.execute(
-								"""
-								INSERT INTO ai_memory (id, user_id, content, embedding, kind)
-								VALUES (%s, %s, %s, %s::jsonb, %s);
-								""",
-								(str(uuid.uuid4()), user_id, content, json.dumps(embedding), kind),
-							)
-							max_conversation = int(float(_env("AI_MEMORY_MAX_CONVERSATION") or "200"))
-							max_important = int(float(_env("AI_MEMORY_MAX_IMPORTANT") or "50"))
-							_prune_by_max(cursor, "conversation", max_conversation)
-							_prune_important_by_relevance(cursor, llm, user_id, max_important)
+							_append_to_context(cursor, llm, user_id, "conversation", content)
+							if kind == "important":
+								_append_to_context(cursor, llm, user_id, "important", content)
 							conn.commit()
 				except Exception as exc:  # noqa: BLE001
 					print(json.dumps({"error": f"Erro ao salvar memória: {exc}"}, ensure_ascii=False))
