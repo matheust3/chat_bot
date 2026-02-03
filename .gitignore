@@ -8,4 +8,5 @@ database-files
 
 /src/generated/prisma
 prisma/migrations
-scripts/__pycache__/
+scripts/__pycache__
+scripts/tools/__pycache__
