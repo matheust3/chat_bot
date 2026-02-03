@@ -134,8 +134,6 @@ def _summarize_context(llm: LLM, text: str, kind: str, max_chars: int) -> str:
 		instructions = (
 			"Resuma somente memórias importantes e de longo prazo."
 			" Preserve dados pessoais estáveis e preferências duradouras."
-			" Formate como linhas curtas, uma informação por linha, sempre começando com 'O usuario'."
-			" Exemplo: 'O nome do usuario é Matheus'."
 		)
 	else:
 		instructions = (
@@ -156,18 +154,8 @@ def _summarize_context(llm: LLM, text: str, kind: str, max_chars: int) -> str:
 	result = crew.kickoff(inputs={"context": text, "max_chars": max_chars, "instructions": instructions})
 	summary = _strip_think(str(result))
 	if summary == "":
-		return _strip_think(text)[:max_chars].rstrip()
-	if kind == "important":
-		lines = []
-		for piece in re.split(r"[\n\.]+", summary):
-			item = piece.strip()
-			if item == "":
-				continue
-			if not item.lower().startswith("o usuario"):
-				item = f"O usuario {item[0].lower() + item[1:] if len(item) > 1 else item.lower()}"
-			lines.append(item)
-		formatted = "\n".join(lines).strip()
-		return formatted[:max_chars].rstrip() if formatted else summary[:max_chars].rstrip()
+		fallback = _strip_think(text)
+		return fallback[:max_chars].rstrip()
 	return summary
 
 
@@ -179,7 +167,11 @@ def _append_to_context(cursor, llm: LLM, user_id: str, kind: str, new_text: str)
 	summary_max_chars = int(float(_env("AI_MEMORY_CONTEXT_SUMMARY_MAX_CHARS") or "1200"))
 	current = _strip_think(_get_user_context(cursor, user_id, kind))
 	combined = f"{current}\n{new_text}".strip() if current else new_text
-	if len(combined) > max_chars:
+	if kind == "important":
+		combined = _summarize_context(llm, combined, kind, summary_max_chars)
+		if len(combined) > summary_max_chars:
+			combined = combined[:summary_max_chars].rstrip()
+	elif len(combined) > max_chars:
 		combined = _summarize_context(llm, combined, kind, summary_max_chars)
 		if len(combined) > summary_max_chars:
 			combined = combined[:summary_max_chars].rstrip()
