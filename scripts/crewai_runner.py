@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import uuid
+from datetime import datetime
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import psycopg2
@@ -41,6 +42,10 @@ def _strip_think(text: str) -> str:
 	cleaned = re.sub(r"<\s*think\s*>[\s\S]*?<\s*/\s*think\s*>", "", text, flags=re.IGNORECASE)
 	cleaned = re.sub(r"\bthink:\s*[\s\S]*$", "", cleaned, flags=re.IGNORECASE)
 	return cleaned.strip()
+
+
+def _current_datetime_str() -> str:
+	return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 IMPORTANT_MEMORY_PATTERNS: tuple[re.Pattern, ...] = (
@@ -129,6 +134,8 @@ def _summarize_context(llm: LLM, text: str, kind: str, max_chars: int) -> str:
 		instructions = (
 			"Resuma somente memórias importantes e de longo prazo."
 			" Preserve dados pessoais estáveis e preferências duradouras."
+			" Formate como linhas curtas, uma informação por linha, sempre começando com 'O usuario'."
+			" Exemplo: 'O nome do usuario é Matheus'."
 		)
 	else:
 		instructions = (
@@ -150,6 +157,17 @@ def _summarize_context(llm: LLM, text: str, kind: str, max_chars: int) -> str:
 	summary = _strip_think(str(result))
 	if summary == "":
 		return _strip_think(text)[:max_chars].rstrip()
+	if kind == "important":
+		lines = []
+		for piece in re.split(r"[\n\.]+", summary):
+			item = piece.strip()
+			if item == "":
+				continue
+			if not item.lower().startswith("o usuario"):
+				item = f"O usuario {item[0].lower() + item[1:] if len(item) > 1 else item.lower()}"
+			lines.append(item)
+		formatted = "\n".join(lines).strip()
+		return formatted[:max_chars].rstrip() if formatted else summary[:max_chars].rstrip()
 	return summary
 
 
@@ -270,6 +288,7 @@ def main() -> None:
 
 
 	description_parts = []
+	description_parts.append(f"IMPORTANTE: Data e hora atuais: {_current_datetime_str()}")
 	if memory_context != "":
 		description_parts.append("Contexto de memória (use apenas se for útil):")
 		description_parts.append(memory_context)
