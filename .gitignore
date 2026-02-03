@@ -8,5 +8,4 @@ database-files
 
 /src/generated/prisma
 prisma/migrations
-scripts/__pycache__/crewai_runner.cpython-312.pyc
-scripts/__pycache__/memory_search_tool.cpython-312.pyc
+scripts/__pycache__/
