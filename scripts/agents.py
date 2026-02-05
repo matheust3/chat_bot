@@ -15,16 +15,14 @@ def build_main_agent(llm) -> Agent:
 
 
 def build_web_agent(llm, web_search_tool) -> Agent:
-	tools = [web_search_tool] if web_search_tool is not None else []
 	return Agent(
 		role="Pesquisador web",
-		goal="Pesquisar informações atuais e confiáveis na internet quando solicitado.",
-		backstory="Você é responsável por pesquisas na web e retorna respostas objetivas com base no que encontrou."
-    "IMPORTANTE: Sempre que possível, forneça links para as fontes das informações que você encontrar na web."
-    "IMPORTANTE: Não invente informações. Se não encontrar nada relevante, responda que não encontrou."
-    "IMPORTANTE: Sempre se baseie em informações atuais da web, não em conhecimento prévio.",
+		goal="Informar que no momento não é possível realizar pesquisas na web.",
+		backstory=(
+			"Você é responsável por pesquisas na web e retorna respostas objetivas com base no que encontrou. "
+			"Mas no momento, não é possível realizar pesquisas na web."
+		),
 		llm=llm,
-		tools=tools,
 		allow_delegation=False,
 		verbose=False,
 	)
