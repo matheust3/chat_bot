@@ -9,7 +9,6 @@ services:
       - AI_BASE_URL=${AI_BASE_URL}
       - AI_API_KEY=${AI_API_KEY}
       - AI_MODEL=${AI_MODEL}
-      - CREWAI_PYTHON=python3
       - PAGARME_API_KEY=${PAGARME_API_KEY}
       - PLAN_ID=${PLAN_ID}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
@@ -19,6 +18,29 @@ services:
     volumes:
       - ${DEV_ROOT_DIR}:/home/developer/chat
     command: bash -c "cd chat && npm i -g npm@10.8.1 && npm install && npm run build && npx prisma generate && npx puppeteer browsers install chrome && npm run start"
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ai_worker:
+    container_name: chat_bot_ai_worker
+    image: chat_bot
+    build: .
+    restart: always
+    user: ubuntu
+    environment:
+      - AI_BASE_URL=${AI_BASE_URL}
+      - AI_API_KEY=${AI_API_KEY}
+      - AI_MODEL=${AI_MODEL}
+      - DATABASE_URL=postgresql://chatbot:chatbot@postgres:5432/chatbot?schema=public
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ${DEV_ROOT_DIR}:/home/developer/chat
+    command: bash -c "cd chat && python3 agent/crewai_worker.py"
+    depends_on:
+      - redis
+      - postgres
     logging:
       options:
         max-size: "10m"

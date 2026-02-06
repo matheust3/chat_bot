@@ -1,51 +1,56 @@
 import { IAAgent } from '../../domain/services/ai-agent'
-import { spawn } from 'node:child_process'
-import path from 'node:path'
+import Redis from 'ioredis'
+import { v4 as uuidv4 } from 'uuid'
 
 const parseJsonFromOutput = (content: string): { answer?: string, error?: string } | null => {
-  const match = content.match(/\{[\s\S]*\}/)
-  if (match == null) return null
   try {
-    return JSON.parse(match[0]) as { answer?: string, error?: string }
+    return JSON.parse(content) as { answer?: string, error?: string }
   } catch {
     return null
   }
 }
 
+const REQUEST_QUEUE = String(process.env.AI_REQUEST_QUEUE ?? 'ai.requests')
+const RESPONSE_PREFIX = String(process.env.AI_RESPONSE_PREFIX ?? 'ai.responses.')
+const RESPONSE_TIMEOUT_SECONDS = Number(process.env.AI_RESPONSE_TIMEOUT_SECONDS ?? 30)
+
 const runCrewAi = async (payload: { message: string, userId: string }): Promise<{ answer?: string, error?: string }> => {
-  const runner = path.resolve(process.cwd(), 'scripts', 'crewai_runner.py')
-  const pythonEnv = String(process.env.CREWAI_PYTHON ?? '').trim()
-  const python = pythonEnv !== '' ? pythonEnv : 'python3'
+  const redisUrl = String(process.env.REDIS_URL ?? '').trim()
+  if (redisUrl === '') {
+    return { error: 'REDIS_URL não definida.' }
+  }
 
-  return await new Promise((resolve) => {
-    const child = spawn(python, [runner], { stdio: ['pipe', 'pipe', 'pipe'] })
-    let stdout = ''
-    let stderr = ''
+  const requestId = uuidv4()
+  const responseKey = `${RESPONSE_PREFIX}${requestId}`
+  const redis = new Redis(redisUrl)
 
-    child.stdout.on('data', (data: Buffer) => {
-      stdout += String(data)
-    })
-    child.stderr.on('data', (data: Buffer) => {
-      stderr += String(data)
-    })
-    child.on('close', () => {
-      const content = stdout.trim()
-      if (content === '') {
-        const err = stderr.trim()
-        resolve({ error: err !== '' ? err : 'Resposta vazia do CrewAI.' })
-        return
-      }
-      const parsed = parseJsonFromOutput(content)
-      if (parsed != null) {
-        resolve(parsed)
-        return
-      }
-      resolve({ error: `Resposta inválida do CrewAI: ${content}` })
-    })
+  try {
+    await redis.rpush(REQUEST_QUEUE, JSON.stringify({
+      id: requestId,
+      responseKey,
+      message: payload.message,
+      userId: payload.userId
+    }))
 
-    child.stdin.write(JSON.stringify(payload))
-    child.stdin.end()
-  })
+    const response = await redis.blpop(responseKey, RESPONSE_TIMEOUT_SECONDS)
+    if (response == null) {
+      return { error: 'Tempo esgotado ao aguardar resposta do agente.' }
+    }
+
+    const [, raw] = response
+    if (raw == null || raw.trim() === '') {
+      return { error: 'Resposta vazia do agente.' }
+    }
+
+    const parsed = parseJsonFromOutput(raw)
+    if (parsed != null) return parsed
+    return { error: `Resposta inválida do agente: ${raw}` }
+  } finally {
+    try {
+      await redis.del(responseKey)
+    } catch {}
+    await redis.quit()
+  }
 }
 
 export class ToolsAiAgent implements IAAgent {

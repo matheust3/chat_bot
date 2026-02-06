@@ -26,6 +26,8 @@ def strip_think(text: str) -> str:
 		return text
 	cleaned = re.sub(r"<\s*think\s*>[\s\S]*?<\s*/\s*think\s*>", "", text, flags=re.IGNORECASE)
 	cleaned = re.sub(r"\bthink:\s*[\s\S]*$", "", cleaned, flags=re.IGNORECASE)
+	cleaned = re.sub(r"<\s*tool_call\s*>[\s\S]*?<\s*/\s*tool_call\s*>", "", cleaned, flags=re.IGNORECASE)
+	cleaned = re.sub(r"<\s*function\s*=\s*delegate_work_to_coworker[\s\S]*?<\s*/\s*function\s*>", "", cleaned, flags=re.IGNORECASE)
 	return cleaned.strip()
 
 

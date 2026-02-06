@@ -1,14 +1,11 @@
-import json
+from __future__ import annotations
+
 import os
-import re
-import sys
 
-from crewai import Agent, Crew, Task
+os.environ.setdefault("CREWAI_TRACING_ENABLED", "false")
+os.environ.setdefault("CREWAI_TRACING_PROMPT", "false")
+
 from crewai import LLM
-
-SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
-if SCRIPTS_DIR not in sys.path:
-	sys.path.insert(0, SCRIPTS_DIR)
 
 from agents import build_main_agent, build_web_agent
 from config import get_ai_config
@@ -24,20 +21,7 @@ from tools_registry import get_web_search_tool
 from utils import current_datetime_str, strip_think
 
 
-def _read_input() -> dict:
-	raw = sys.stdin.read().strip()
-	if raw == "":
-		return {}
-	try:
-		return json.loads(raw)
-	except json.JSONDecodeError:
-		return {}
-
-
-
-
-def main() -> None:
-	payload = _read_input()
+def run_crewai(payload: dict) -> dict:
 	message = str(payload.get("message", "")).strip()
 	user_id = str(payload.get("userId", "")).strip()
 
@@ -47,19 +31,12 @@ def main() -> None:
 	model = ai_config["model"]
 
 	if message == "":
-		print(json.dumps({"error": "Mensagem vazia."}, ensure_ascii=False))
-		return
+		return {"error": "Mensagem vazia."}
 
 	if base_url == "" or api_key == "" or model == "":
-		print(
-			json.dumps(
-				{
-					"error": "Variáveis de ambiente ausentes: AI_BASE_URL, AI_API_KEY, AI_MODEL."
-				},
-				ensure_ascii=False,
-			)
-		)
-		return
+		return {
+			"error": "Variáveis de ambiente ausentes: AI_BASE_URL, AI_API_KEY, AI_MODEL."
+		}
 
 	llm = LLM(
 		model=model,
@@ -79,9 +56,7 @@ def main() -> None:
 				ensure_schema(cursor)
 				memory_context = build_memory_context(cursor, user_id)
 		except Exception as exc:  # noqa: BLE001
-			print(json.dumps({"error": f"Erro ao carregar memória: {exc}"}, ensure_ascii=False))
-			return
-
+			return {"error": f"Erro ao carregar memória: {exc}"}
 
 	description_parts = []
 	description_parts.append(f"IMPORTANTE: Data e hora atuais: {current_datetime_str()}")
@@ -100,8 +75,7 @@ def main() -> None:
 		result = crew.kickoff(inputs={"message": message})
 		answer = strip_think(str(result))
 		if answer == "":
-			print(json.dumps({"error": "Não consegui responder agora."}, ensure_ascii=False))
-			return
+			return {"error": "Não consegui responder agora."}
 
 		if user_id != "":
 			try:
@@ -113,13 +87,8 @@ def main() -> None:
 					if kind == "important":
 						append_to_context(cursor, llm, user_id, "important", content)
 			except Exception as exc:  # noqa: BLE001
-				print(json.dumps({"error": f"Erro ao salvar memória: {exc}"}, ensure_ascii=False))
-				return
+				return {"error": f"Erro ao salvar memória: {exc}"}
 
-		print(json.dumps({"answer": answer}, ensure_ascii=False))
+		return {"answer": answer}
 	except Exception as exc:  # noqa: BLE001
-		print(json.dumps({"error": str(exc)}, ensure_ascii=False))
-
-
-if __name__ == "__main__":
-	main()
+		return {"error": str(exc)}
