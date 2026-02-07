@@ -10,3 +10,8 @@ database-files
 prisma/migrations
 scripts/__pycache__
 scripts/tools/__pycache__
+*/__pycache__
+__pycache__
+.pytest_cache
+.pytest_cache/*
+*.log
