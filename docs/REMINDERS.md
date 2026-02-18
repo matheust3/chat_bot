@@ -130,6 +130,20 @@ O `ReminderNotificationService` (TypeScript):
 
 ## Configuração
 
+### Database Migration
+
+Antes de usar a funcionalidade de lembretes, é necessário executar a migração do banco de dados:
+
+```bash
+# Se estiver usando Docker
+docker compose exec api npx prisma migrate deploy
+
+# Ou localmente
+npx prisma migrate deploy
+```
+
+A migração `20260218055420_add_reminders_table` criará a tabela `reminders` com os índices necessários.
+
 ### Variáveis de Ambiente
 
 ```bash
