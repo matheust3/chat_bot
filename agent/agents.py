@@ -3,12 +3,17 @@ from __future__ import annotations
 from crewai import Agent
 
 
-def build_main_agent(llm) -> Agent:
+def build_main_agent(llm, reminder_tool=None) -> Agent:
+	tools = []
+	if reminder_tool is not None:
+		tools.append(reminder_tool)
+	
 	return Agent(
 		role="Assistente do chatbot",
 		goal="Responder de forma útil, clara e objetiva à mensagem do usuário.",
 		backstory="Você é o assistente principal do chatbot e ajuda usuários em PT-BR.",
 		llm=llm,
+		tools=tools,
 		allow_delegation=True,
 		verbose=False,
 	)
