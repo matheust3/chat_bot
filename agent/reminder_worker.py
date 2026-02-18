@@ -11,7 +11,7 @@ import redis
 from config import get_database_url
 from utils import env, sanitize_database_url
 
-REMINDER_CHECK_INTERVAL = int(env("REMINDER_CHECK_INTERVAL") or "60")
+REMINDER_CHECK_INTERVAL = int(env("REMINDER_CHECK_INTERVAL") or "60") if (env("REMINDER_CHECK_INTERVAL") or "60").isdigit() else 60
 REMINDER_QUEUE = env("REMINDER_QUEUE") or "reminders.notifications"
 
 
