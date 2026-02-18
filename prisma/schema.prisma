@@ -74,3 +74,17 @@ model AiMemory {
   @@index([userId, kind, createdAt])
   @@map("ai_memory")
 }
+
+model Reminder {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  message     String
+  scheduledAt DateTime @map("scheduled_at")
+  sent        Boolean  @default(false)
+  sentAt      DateTime? @map("sent_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId, scheduledAt])
+  @@index([sent, scheduledAt])
+  @@map("reminders")
+}

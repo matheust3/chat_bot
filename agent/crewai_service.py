@@ -17,7 +17,7 @@ from memory_context import (
 	classify_memory_kind,
 	ensure_schema,
 )
-from tools_registry import get_web_search_tool
+from tools_registry import get_reminder_tool, get_web_search_tool
 from utils import current_datetime_str, strip_think
 
 
@@ -45,7 +45,8 @@ def run_crewai(payload: dict) -> dict:
 		temperature=0.2,
 	)
 
-	agent = build_main_agent(llm)
+	reminder_tool = get_reminder_tool(user_id)
+	agent = build_main_agent(llm, reminder_tool)
 	web_search_tool = get_web_search_tool()
 	web_agent = build_web_agent(llm, web_search_tool)
 
