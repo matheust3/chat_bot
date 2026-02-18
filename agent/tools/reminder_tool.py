@@ -17,6 +17,7 @@ class ReminderTool(BaseTool):
 		"Use quando o usuário pedir para ser lembrado de algo. "
 		"Aceita: mensagem (texto do lembrete) e data_hora (formato ISO 8601, ex: '2026-02-20T14:30:00')."
 	)
+	user_id: str = ""
 
 	def _run(self, mensagem: str, data_hora: str) -> str:
 		"""Cria um lembrete para o usuário."""
@@ -31,9 +32,8 @@ class ReminderTool(BaseTool):
 			if scheduled_dt <= datetime.now(scheduled_dt.tzinfo):
 				return "Erro: A data/hora do lembrete deve ser no futuro."
 
-			# Obtém o user_id do contexto (será injetado pelo agente)
-			user_id = getattr(self, "_user_id", None)
-			if not user_id:
+			# Obtém o user_id do contexto
+			if not self.user_id:
 				return "Erro: Não foi possível identificar o usuário."
 
 			# Conecta ao banco e insere o lembrete
@@ -49,7 +49,7 @@ class ReminderTool(BaseTool):
 						VALUES (gen_random_uuid()::text, %s, %s, %s, false, CURRENT_TIMESTAMP)
 						RETURNING id
 						""",
-						(user_id, mensagem, scheduled_dt),
+						(self.user_id, mensagem, scheduled_dt),
 					)
 					reminder_id = cursor.fetchone()[0]
 					conn.commit()
@@ -65,6 +65,4 @@ class ReminderTool(BaseTool):
 
 def build_reminder_tool(user_id: str = "") -> ReminderTool:
 	"""Constrói a ferramenta de lembretes com o contexto do usuário."""
-	tool = ReminderTool()
-	tool._user_id = user_id  # Injeta o user_id no contexto da ferramenta
-	return tool
+	return ReminderTool(user_id=user_id)
