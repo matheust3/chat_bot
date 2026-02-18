@@ -8,6 +8,8 @@ import { messageAdapter } from './adapters/messageAdapter'
 import commands from './config/commands'
 import middlewares from './config/middlewares'
 import { clientAdapter } from './adapters/clientAdapter'
+import { createWhatsAppCodeSubscriber } from './helpers/whatsapp-code-subscriber-factory'
+import { ReminderNotificationService } from './services/reminder-notification-service'
 
 interface IOriginQuotedMsg {
   id: {
@@ -38,8 +40,23 @@ create({
   folderNameToken: path.join(__dirname, '/../../database-files/tokens'),
   debug: false,
   headless: true,
-  browserArgs: ['--no-sandbox']
+  browserArgs: ['--no-sandbox'],
+  puppeteerOptions: {
+    protocolTimeout: 120000
+  }
 }).then(async (client) => {
+  const whatsappCodeSubscriber = createWhatsAppCodeSubscriber(clientAdapter(client))
+  whatsappCodeSubscriber.start()
+  
+  // Inicia o serviço de notificação de lembretes
+  try {
+    const reminderService = new ReminderNotificationService()
+    reminderService.setClient(clientAdapter(client))
+    await reminderService.start()
+  } catch (err) {
+    console.error('Erro ao iniciar serviço de lembretes:', err)
+  }
+  
   // Recebe a mensagem e envia a resposta
   client.onAnyMessage((message: Message) => {
     void (async () => {

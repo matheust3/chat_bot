@@ -23,8 +23,31 @@ export const clientAdapter = (client: Whatsapp): IClient => {
       // Faz o download do arquivo
       return await client.decryptFile(message)
     },
+    getContactName: async (contactId: string) => {
+      const contact = await client.getContact(contactId)
+      return contact?.pushname ?? contact?.name ?? contact?.shortName ?? contact?.formattedName
+    },
+    getChatName: async (chatId: string) => {
+      const chat = await client.getChatById(chatId)
+      const chatData = chat as unknown as { name?: string, formattedTitle?: string, title?: string }
+      return chatData?.name ?? chatData?.formattedTitle ?? chatData?.title
+    },
     getGroupInviteLink: async (chatId: string) => {
       return await client.getGroupInviteLink(chatId)
+    },
+    getNumberId: async (phone: string) => {
+      const contactId = phone.includes('@') ? phone : `${phone}@c.us`
+      const status = await client.checkNumberStatus(contactId)
+      if (!status.canReceiveMessage) {
+        return undefined
+      }
+      const serialized = (status.id as { _serialized?: string })?._serialized
+      return serialized
+    },
+    getPnLidEntry: async (phoneOrLid: string) => {
+      const contactId = phoneOrLid.includes('@') ? phoneOrLid : `${phoneOrLid}@c.us`
+      const entry = await client.getPnLidEntry(contactId)
+      return entry as { lid?: { _serialized?: string }, phoneNumber?: { _serialized?: string } }
     },
     deleteMessage: async (chatId: string, messageId: string) => {
       await client.deleteMessage(chatId, messageId, false, true)
