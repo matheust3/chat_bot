@@ -82,7 +82,7 @@ services:
       - "3001:3001"
     volumes:
       - ${DEV_ROOT_DIR}/client:/app
-    command: /bin/sh -c "npm install && npm run build && npm run start"
+    command: /bin/sh -c "npm install && npx prisma generate && npm run build && npm run start"
     depends_on:
       - postgres
     logging:

@@ -5,6 +5,9 @@ RUN apt update && apt install -y ffmpeg curl git wget tree imagemagick vim nano 
 # Instala o google chrome
 RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 RUN apt install ./google-chrome-stable_current_amd64.deb -y
+# Cria usuário de desenvolvimento
+RUN id -u ubuntu >/dev/null 2>&1 || useradd -m -s /bin/bash ubuntu
+RUN mkdir -p /home/developer && chown -R ubuntu:ubuntu /home/developer
 # Usuario de desenvolvimento
 USER ubuntu
 # Instala CrewAI (Python)
