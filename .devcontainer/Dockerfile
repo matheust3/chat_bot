@@ -14,11 +14,11 @@ RUN apt-get update
 RUN apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 # Copia o id do usuário docker da maquina host (para usar o CLI no devcontainer) esse argumento é passado na construção da imagem
 ARG HOST_DOCKER_GROUP_ID
-RUN groupmod -g $HOST_DOCKER_GROUP_ID docker 
-# Adiciona o usuário ubuntu ao grupo do docker
-RUN usermod -aG docker ubuntu
-# Atualiza os grupos do usuário developer
-RUN newgrp docker
+RUN if getent group "${HOST_DOCKER_GROUP_ID}" >/dev/null; then \
+    usermod -aG "$(getent group "${HOST_DOCKER_GROUP_ID}" | cut -d: -f1)" ubuntu; \
+  else \
+    groupmod -g "${HOST_DOCKER_GROUP_ID}" docker && usermod -aG docker ubuntu; \
+  fi
 # Instala o google chrome
 RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 RUN apt install ./google-chrome-stable_current_amd64.deb -y
