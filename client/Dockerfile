@@ -6,7 +6,7 @@ WORKDIR /app
 COPY client/package.json client/package-lock.json* ./
 
 # Instalar dependências
-RUN npm install
+RUN npm install --no-audit --no-fund
 
 # Copiar código-fonte do client
 COPY client/prisma ./prisma
@@ -16,7 +16,7 @@ COPY client/tsconfig.json ./
 COPY client/.eslintrc.json ./
 
 # Gerar Prisma Client
-RUN npx prisma generate
+RUN ./node_modules/.bin/prisma generate
 
 # Expor porta
 EXPOSE 3001
