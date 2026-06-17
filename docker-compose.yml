@@ -5,6 +5,7 @@ services:
     build: .
     restart: always
     user: ubuntu
+    dns: 8.8.8.8
     environment:
       - AI_BASE_URL=${AI_BASE_URL}
       - AI_API_KEY=${AI_API_KEY}
@@ -29,6 +30,7 @@ services:
     build: .
     restart: always
     user: ubuntu
+    dns: 8.8.8.8
     environment:
       - AI_BASE_URL=${AI_BASE_URL}
       - AI_API_KEY=${AI_API_KEY}
@@ -52,6 +54,7 @@ services:
     build: .
     restart: always
     user: ubuntu
+    dns: 8.8.8.8
     environment:
       - DATABASE_URL=postgresql://chatbot:chatbot@postgres:5432/chatbot?schema=public
       - REDIS_URL=redis://redis:6379
@@ -73,6 +76,10 @@ services:
     build:
       context: .
       dockerfile: ./client/Dockerfile
+      extra_hosts:
+        - "registry.npmjs.org:104.16.0.34"
+        - "binaries.prisma.sh:104.20.43.103"
+    dns: 8.8.8.8
     restart: always
     environment:
       - DATABASE_URL=postgresql://chatbot:chatbot@postgres:5432/chatbot?schema=public
@@ -82,7 +89,7 @@ services:
       - "3001:3001"
     volumes:
       - ${DEV_ROOT_DIR}/client:/app
-    command: /bin/sh -c "npm install && npx prisma generate && npm run build && npm run start"
+    command: /bin/sh -c "npm install && ./node_modules/.bin/prisma generate && npm run build && npm run start"
     depends_on:
       - postgres
     logging:
