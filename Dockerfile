@@ -10,9 +10,6 @@ RUN id -u ubuntu >/dev/null 2>&1 || useradd -m -s /bin/bash ubuntu
 RUN mkdir -p /home/developer && chown -R ubuntu:ubuntu /home/developer
 # Usuario de desenvolvimento
 USER ubuntu
-# Instala CrewAI (Python)
-RUN python3 -m pip install --no-cache-dir --break-system-packages crewai ollama langchain-community litellm langchain-postgres psycopg2-binary langchain-openai redis fastapi
-RUN python3 -m pip install --no-cache-dir --break-system-packages apscheduler pydantic[email] fastapi_sso
 # Cria a pasta developer
 WORKDIR /home/developer
 # Instala o node

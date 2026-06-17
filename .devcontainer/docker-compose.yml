@@ -8,6 +8,7 @@ services:
       dockerfile: ./.devcontainer/Dockerfile
       args:
         - HOST_DOCKER_GROUP_ID=${HOST_DOCKER_GROUP_ID}
+      network: host
     restart: on-failure
     environment:
       - DEV_ROOT_DIR=${DEV_ROOT_DIR}

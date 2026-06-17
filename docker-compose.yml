@@ -7,9 +7,6 @@ services:
     user: ubuntu
     dns: 8.8.8.8
     environment:
-      - AI_BASE_URL=${AI_BASE_URL}
-      - AI_API_KEY=${AI_API_KEY}
-      - AI_MODEL=${AI_MODEL}
       - PAGARME_API_KEY=${PAGARME_API_KEY}
       - PLAN_ID=${PLAN_ID}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
@@ -19,79 +16,6 @@ services:
     volumes:
       - ${DEV_ROOT_DIR}:/home/developer/chat
     command: bash -c "cd chat && npm i -g npm@10.8.1 && npm install && npm run build && npx prisma generate && npx puppeteer browsers install chrome && npm run start"
-    logging:
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  ai_worker:
-    container_name: chat_bot_ai_worker
-    image: chat_bot
-    build: .
-    restart: always
-    user: ubuntu
-    dns: 8.8.8.8
-    environment:
-      - AI_BASE_URL=${AI_BASE_URL}
-      - AI_API_KEY=${AI_API_KEY}
-      - AI_MODEL=${AI_MODEL}
-      - DATABASE_URL=postgresql://chatbot:chatbot@postgres:5432/chatbot?schema=public
-      - REDIS_URL=redis://redis:6379
-    volumes:
-      - ${DEV_ROOT_DIR}:/home/developer/chat
-    command: bash -c "cd chat && python3 agent/crewai_worker.py"
-    depends_on:
-      - redis
-      - postgres
-    logging:
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  reminder_worker:
-    container_name: chat_bot_reminder_worker
-    image: chat_bot
-    build: .
-    restart: always
-    user: ubuntu
-    dns: 8.8.8.8
-    environment:
-      - DATABASE_URL=postgresql://chatbot:chatbot@postgres:5432/chatbot?schema=public
-      - REDIS_URL=redis://redis:6379
-      - REMINDER_CHECK_INTERVAL=${REMINDER_CHECK_INTERVAL:-60}
-      - REMINDER_QUEUE=${REMINDER_QUEUE:-reminders.notifications}
-    volumes:
-      - ${DEV_ROOT_DIR}:/home/developer/chat
-    command: bash -c "cd chat && python3 agent/reminder_worker.py"
-    depends_on:
-      - redis
-      - postgres
-    logging:
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  client:
-    container_name: saas_client
-    build:
-      context: .
-      dockerfile: ./client/Dockerfile
-      extra_hosts:
-        - "registry.npmjs.org:104.16.0.34"
-        - "binaries.prisma.sh:104.20.43.103"
-    dns: 8.8.8.8
-    restart: always
-    environment:
-      - DATABASE_URL=postgresql://chatbot:chatbot@postgres:5432/chatbot?schema=public
-      - NEXT_PUBLIC_API_URL=http://api:3000
-      - REDIS_URL=redis://redis:6379
-    ports:
-      - "3001:3001"
-    volumes:
-      - ${DEV_ROOT_DIR}/client:/app
-    command: /bin/sh -c "npm install && ./node_modules/.bin/prisma generate && npm run build && npm run start"
-    depends_on:
-      - postgres
     logging:
       options:
         max-size: "10m"
