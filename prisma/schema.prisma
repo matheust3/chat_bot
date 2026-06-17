@@ -62,29 +62,3 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model AiMemory {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  content   String
-  embedding Json
-  createdAt DateTime @default(now()) @map("created_at")
-  kind      String   @default("conversation")
-
-  @@index([userId, createdAt])
-  @@index([userId, kind, createdAt])
-  @@map("ai_memory")
-}
-
-model Reminder {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  message     String
-  scheduledAt DateTime @map("scheduled_at")
-  sent        Boolean  @default(false)
-  sentAt      DateTime? @map("sent_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  @@index([userId, scheduledAt])
-  @@index([sent, scheduledAt])
-  @@map("reminders")
-}
