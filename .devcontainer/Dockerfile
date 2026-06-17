@@ -25,6 +25,8 @@ RUN apt install ./google-chrome-stable_current_amd64.deb -y
 # Usuario de desenvolvimento
 USER ubuntu
 WORKDIR /home/developer
+# Instala o opencode
+RUN curl -fsSL https://opencode.ai/install | bash
 # Instala o node
 RUN wget https://nodejs.org/dist/v20.19.1/node-v20.19.1-linux-x64.tar.xz -O node.tar.xz
 RUN tar -xf node.tar.xz
